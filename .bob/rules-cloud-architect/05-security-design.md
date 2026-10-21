@@ -1,0 +1,43 @@
+<!-- load when: producing any security design section: IAM/RBAC, encryption, secrets management, audit logging, or data governance -->
+
+# Security Design
+
+Every architecture produced in this mode must include a security design section covering all four domains below.
+
+## IAM and RBAC
+
+- Define a least-privilege IAM role or service account per component (one role per service, no shared roles across services).
+- Name each role explicitly in the architecture (e.g. `doc-validator-role`, `batch-aggregator-role`).
+- Show which role has access to which resource with what action permissions.
+- For AWS: IAM roles with resource-based policies. For Azure: Managed Identities + RBAC role assignments. For GCP: Workload Identity + IAM bindings.
+- No static long-lived credentials. All compute uses identity federation or managed identity.
+
+## Encryption
+
+| Layer | Requirement |
+|---|---|
+| Data at rest | AES-256 via cloud KMS (AWS KMS / Azure Key Vault / Cloud KMS). Customer-managed keys (CMK) preferred for enterprise data. |
+| Data in transit | TLS 1.2 minimum, TLS 1.3 preferred. No plaintext connections between services. |
+| Secrets | Never in environment variables directly. Reference secrets store ARN/URI only. |
+| Processed documents (output) | Encrypted at rest in output storage. Encryption key separate from input storage key. |
+
+## Secrets management
+
+- All credentials (Snowflake keypairs, Databricks service principal secrets, CCL API keys) are stored in the cloud-native secrets store (AWS Secrets Manager / Azure Key Vault / GCP Secret Manager).
+- Secret names follow a consistent naming convention: `<env>/<component>/<credential-type>` (e.g. `prod/snowflake-loader/private-key`).
+- Secret rotation: document the expected rotation interval and the rotation mechanism (automatic where supported).
+- No secrets in source code, container images, Terraform state, or architecture documents.
+
+## Audit logging
+
+- Every service emits structured logs to the central logging service (CloudWatch Logs / Azure Monitor Logs / Cloud Logging).
+- Log entries for document processing must include: document ID, processing stage, timestamp, outcome, and error code (never document content).
+- API calls to enterprise integrations (Snowflake, CCL, Databricks) are logged with request ID, endpoint, and latency.
+- Audit logs are immutable and retained per the enterprise retention policy (document in spec if known; default: 90 days).
+- CloudTrail / Activity Log / Cloud Audit Logs enabled for all cloud API calls.
+
+## Data governance
+
+- PII must be identified in the data model section of every architecture. If documents may contain PII, the architecture must show where PII scanning occurs (pre-processing) and what the handling policy is.
+- Enterprise data classification labels (if provided in spec) apply to all output tables and storage buckets.
+- Data residency constraints (if provided in spec) must be reflected in region selection for all services.

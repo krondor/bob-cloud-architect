@@ -1,0 +1,17 @@
+# Local MCP config — contains account-specific URLs and credentials, never commit
+.bob/mcp.json
+
+# Generated architecture outputs — committed selectively via PR, not auto-tracked
+docs/
+
+# Node
+node_modules/
+.npm/
+
+# OS noise
+.DS_Store
+Thumbs.db
+
+# Editor state — workspace settings are local
+.vscode/settings.json
+package-lock.json

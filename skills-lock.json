@@ -1,0 +1,40 @@
+{
+  "_comment": [
+    "skills-lock.json — pinned skill sources for bob-cloud-architect.",
+    "",
+    "A skill is a SKILL.md file that Bob loads via use_skill. It can come from any source.",
+    "This file records where each installed skill came from and what version/commit was",
+    "vendored, so the workspace is reproducible and auditable.",
+    "",
+    "How to add a skill:",
+    "  1. Obtain the SKILL.md by one of these methods:",
+    "     a) Community registry (npx):  npx github:<org>/<repo>  (if the repo exports a skill)",
+    "     b) GitHub raw URL:            curl -o .bob/skills/<name>/SKILL.md <raw-url>",
+    "     c) Manual copy:               paste the SKILL.md content into .bob/skills/<name>/SKILL.md",
+    "     d) Write your own:            create .bob/skills/<name>/SKILL.md from scratch",
+    "  2. Register it in AGENTS.md (Skills available table).",
+    "  3. Add an entry to this file with source, type, and the commit/version pinned.",
+    "  4. Open a PR — skill changes are reviewed like code.",
+    "",
+    "To update a skill: obtain the new SKILL.md, replace the file, update the entry below, PR.",
+    "Never edit a third-party skill file in place — replace it from its source and update the pin."
+  ],
+  "skills": {
+    "cloud-architecture-patterns": {
+      "source": "local",
+      "type": "custom",
+      "version": "1.0.0",
+      "path": ".bob/skills/cloud-architecture-patterns/SKILL.md",
+      "description": "Pattern catalog for enterprise cloud architecture — event-driven, CQRS, saga, structural, and data patterns with cloud-native service mappings for AWS, Azure, and GCP.",
+      "authored": "2025-01-27"
+    },
+    "well-architected-review": {
+      "source": "local",
+      "type": "custom",
+      "version": "1.0.0",
+      "path": ".bob/skills/well-architected-review/SKILL.md",
+      "description": "Structured five-pillar architecture review mapped to AWS WAF, Azure WAF, and Google Cloud Architecture Framework pillars.",
+      "authored": "2025-01-27"
+    }
+  }
+}

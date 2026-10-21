@@ -1,0 +1,12 @@
+{
+  "name": "bob-cloud-architect",
+  "version": "0.1.0",
+  "description": "IBM Bob cloud architect mode — multi-cloud enterprise architecture design",
+  "main": "scripts/install.mjs",
+  "type": "module",
+  "scripts": {
+    "install-mode": "node scripts/install.mjs"
+  },
+  "keywords": ["bob", "ibm-bob", "claude", "ai-agent", "cloud", "architecture", "aws", "azure", "gcp"],
+  "license": "MIT"
+}

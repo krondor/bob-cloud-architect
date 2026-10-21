@@ -1,0 +1,33 @@
+{
+  "mcpServers": {
+    "awslabs.aws-documentation-mcp-server": {
+      "type": "stdio",
+      "command": "uvx",
+      "args": ["awslabs.aws-documentation-mcp-server@latest"],
+      "env": {
+        "FASTMCP_LOG_LEVEL": "ERROR",
+        "AWS_DOCUMENTATION_PARTITION": "aws"
+      },
+      "disabled": false,
+      "autoApprove": [],
+      "comment": "AWS Documentation MCP Server. Provides read_documentation, search_documentation, read_sections, search_table, and recommend tools for grounded AWS service selection. No AWS credentials needed. Prerequisites: install 'uv' from https://docs.astral.sh/uv/getting-started/installation/ then run 'uv python install 3.10'. Corporate networks: if your proxy blocks default User-Agent strings, add MCP_USER_AGENT with your browser UA string. Set AWS_DOCUMENTATION_PARTITION to 'aws-cn' for China regions. Docs: https://awslabs.github.io/mcp/servers/aws-documentation-mcp-server"
+    },
+    "microsoft-learn": {
+      "type": "http",
+      "url": "https://learn.microsoft.com/api/mcp",
+      "disabled": false,
+      "autoApprove": [],
+      "comment": "Microsoft Learn MCP Server. Provides microsoft_docs_search, microsoft_docs_fetch, and microsoft_code_sample_search tools for grounded Azure and Microsoft service selection. No auth, no local install — connects directly to learn.microsoft.com. Covers all Azure docs, .NET, and Microsoft technology docs. Source: https://github.com/microsoftdocs/mcp"
+    },
+    "google-developer-knowledge": {
+      "type": "http",
+      "url": "https://developerknowledge.googleapis.com/mcp",
+      "headers": {
+        "X-Goog-Api-Key": "YOUR_GCP_API_KEY"
+      },
+      "disabled": false,
+      "autoApprove": [],
+      "comment": "Google Developer Knowledge MCP Server. Provides search_documents, get_documents, and answer_query tools covering Google Cloud, Firebase, Android, Maps Platform, and more. Requires a Google Cloud project with the Developer Knowledge API enabled and an API key restricted to that API. Setup: (1) enable developerknowledge.googleapis.com in your GCP project, (2) create an API key at console.cloud.google.com/apis/credentials restricted to Developer Knowledge API, (3) replace YOUR_GCP_API_KEY above. Docs: https://developers.google.com/knowledge/mcp"
+    }
+  }
+}
