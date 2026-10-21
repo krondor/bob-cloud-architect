@@ -12,8 +12,8 @@ When recommending services, always produce a three-column mapping:
 |---|---|---|---|
 | Object storage | S3 | Blob Storage | Cloud Storage |
 | Event notification | EventBridge / S3 Event Notifications | Event Grid | Eventarc |
-| Messaging queue | SQS | Service Bus Queue | Pub/Sub |
-| Serverless compute | Lambda | Azure Functions | Cloud Functions / Cloud Run |
+| Messaging queue | SQS | Service Bus Queue | Pub/Sub (pub-sub fan-out/streaming) / Cloud Tasks (point-to-point work queue) |
+| Serverless compute | Lambda | Azure Functions | Cloud Run functions (formerly Cloud Functions 2nd gen; deploy via Cloud Run Admin API) / Cloud Run |
 | Secrets management | Secrets Manager | Key Vault | Secret Manager |
 | KMS | KMS | Key Vault (keys) | Cloud KMS |
 | Container registry | ECR | ACR | Artifact Registry |
