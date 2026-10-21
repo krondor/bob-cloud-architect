@@ -104,7 +104,7 @@ On failure, the orchestrator issues compensating transactions to undo completed 
 
 | Capability | AWS | Azure | GCP |
 |---|---|---|---|
-| Orchestrator | Step Functions (Standard) | Durable Functions / Logic Apps | Workflows |
+| Orchestrator | Step Functions (Standard workflow — use Standard, not Express; sagas require long-running, exactly-once execution) | Durable Functions / Logic Apps | Workflows |
 | State persistence | Step Functions built-in | Durable Functions storage | Workflows built-in |
 | Async step trigger | SQS + Lambda | Service Bus + Functions | Pub/Sub + Cloud Functions |
 

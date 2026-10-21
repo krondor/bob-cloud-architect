@@ -35,7 +35,7 @@ Extend the base mapping in `02-multi-cloud-parity.md` with HA-relevant services.
 | Multi-region relational DB | Aurora Global Database | Cosmos DB (multi-region writes) / Azure SQL geo-replication | Cloud Spanner (multi-region) / AlloyDB cross-region replica |
 | Multi-region key-value / document | DynamoDB Global Tables | Cosmos DB | Firestore (multi-region) |
 | Multi-region object storage | S3 Cross-Region Replication | Azure Blob Storage geo-redundant (GRS/GZRS) | Cloud Storage dual-region / multi-region buckets |
-| Multi-region queue / messaging | SQS (no native cross-region; replicate via Lambda) | Service Bus Geo-Disaster Recovery pairing | Pub/Sub (global by default) |
+| Multi-region queue / messaging | SQS (no native cross-region; use SNS cross-region delivery to fan out to SQS in secondary region) | Service Bus Geo-Replication (Premium tier; replicates messages + metadata) or Geo-Disaster Recovery (metadata only) | Pub/Sub (global by default) |
 | Health monitoring | Route 53 health checks + CloudWatch | Azure Monitor + Traffic Manager probes | Cloud Monitoring uptime checks |
 | Failover orchestration | Route 53 DNS failover | Traffic Manager automatic failover | Cloud Load Balancing backend failover |
 
