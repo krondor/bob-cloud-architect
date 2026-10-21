@@ -3,17 +3,31 @@
 // workspace's .bob/ folder, without cloning this repo into that workspace.
 //
 // Usage (from the target workspace):
-//   npx github:krondor/bob-cloud-architect
+//   npx github:krondor/bob-cloud-architect [target-dir] [options]
 //   node /path/to/bob-cloud-architect/scripts/install.mjs [target-dir] [options]
 //
-// Options:
-//   --dry-run          Print what would change; write nothing.
-//   --force            Replace an existing cloud-architect block in custom_modes.yaml.
-//   --with-templates   Also copy AGENTS.md and specs/001-example (only if absent).
-//   --git-exclude      Add installed paths to .git/info/exclude (local-only ignore).
-//   --with-mcp         Also copy .bob/mcp.json.example (configure cloud doc MCP servers).
+// By default, installs:
+//   - Custom mode definition (.bob/custom_modes.yaml)
+//   - Mode rules (.bob/rules-cloud-architect/)
+//   - Skills (.bob/skills/)
+//   - MCP server config (.bob/mcp.json.example)
+//   - AGENTS.md operating contract
+//   - Starter spec templates (specs/)
 //
-// Merge rules: custom_modes.yaml is merged (never overwritten). Rules are overwritten (update path).
+// Options:
+//   --dry-run             Print what would change; write nothing.
+//   --force               Replace an existing cloud-architect block and overwrite template files.
+//   --git-exclude         Add installed paths to .git/info/exclude (local-only ignore).
+//   --no-agents           Skip copying AGENTS.md.
+//   --no-mcp              Skip copying .bob/mcp.json.example.
+//   --no-templates        Skip copying starter specs (specs/).
+//   --no-skills           Skip copying .bob/skills/.
+//   --no-rules            Skip copying .bob/rules-cloud-architect/.
+//   --no-mode             Skip updating .bob/custom_modes.yaml.
+//   -h, --help            Show help message.
+//
+// Merge rules: custom_modes.yaml is merged (never overwritten unless --force).
+// Existing files (AGENTS.md, mcp.json.example, specs) are preserved unless --force is specified.
 
 import {
   cpSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync, appendFileSync, statSync,
@@ -25,10 +39,47 @@ const SLUG = "cloud-architect";
 const SRC = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
 const args = process.argv.slice(2);
-const flags = new Set(args.filter((a) => a.startsWith("--")));
-const positional = args.filter((a) => !a.startsWith("--"));
+const flags = new Set(args.filter((a) => a.startsWith("-")));
+const positional = args.filter((a) => !a.startsWith("-"));
+
+if (flags.has("-h") || flags.has("--help")) {
+  console.log(`
+Usage:
+  npx github:krondor/bob-cloud-architect [target-dir] [options]
+  node scripts/install.mjs [target-dir] [options]
+
+By default, installs:
+  - Custom mode definition (.bob/custom_modes.yaml)
+  - Mode rules (.bob/rules-cloud-architect/)
+  - Skills (.bob/skills/)
+  - MCP server config (.bob/mcp.json.example)
+  - AGENTS.md operating contract
+  - Starter spec templates (specs/)
+
+Options:
+  --dry-run             Print what would change; write nothing.
+  --force               Replace existing mode block and overwrite existing files.
+  --git-exclude         Add installed paths to .git/info/exclude (local-only ignore).
+  --no-agents           Skip installing AGENTS.md.
+  --no-mcp              Skip installing .bob/mcp.json.example.
+  --no-templates        Skip installing starter specs (specs/).
+  --no-skills           Skip installing skills in .bob/skills/.
+  --no-rules            Skip installing mode rules in .bob/rules-cloud-architect/.
+  --no-mode             Skip updating .bob/custom_modes.yaml.
+  -h, --help            Show this help message.
+`);
+  process.exit(0);
+}
+
 const DRY = flags.has("--dry-run");
 const FORCE = flags.has("--force");
+const NO_AGENTS = flags.has("--no-agents") || flags.has("--without-agents");
+const NO_MCP = flags.has("--no-mcp") || flags.has("--without-mcp");
+const NO_TEMPLATES = flags.has("--no-templates") || flags.has("--without-templates");
+const NO_SKILLS = flags.has("--no-skills") || flags.has("--without-skills");
+const NO_RULES = flags.has("--no-rules") || flags.has("--without-rules");
+const NO_MODE = flags.has("--no-mode") || flags.has("--without-mode");
+
 const TARGET = resolve(positional[0] ?? process.cwd());
 
 if (resolve(TARGET) === SRC) {
@@ -47,12 +98,15 @@ function ensureDir(p) {
   if (!DRY) mkdirSync(p, { recursive: true });
 }
 
-function copy(srcRel, destRel) {
+function copy(srcRel, destRel, { overwrite = true } = {}) {
   const src = join(SRC, srcRel);
   const dest = join(TARGET, destRel);
   if (!existsSync(src)) {
     console.error(`Missing source asset: ${srcRel}`);
     process.exit(1);
+  }
+  if (!overwrite && existsSync(dest)) {
+    return log(`skip   ${destRel} (already exists; use --force to overwrite)`);
   }
   ensureDir(dirname(dest));
   if (!DRY) cpSync(src, dest, { recursive: true, dereference: true, force: true });
@@ -99,41 +153,65 @@ function installModes() {
 // ── run ────────────────────────────────────────────────────────────────────────
 console.log(`Source: ${SRC}\nTarget: ${TARGET}\n`);
 
-installModes();
-copy(`.bob/rules-${SLUG}`, `.bob/rules-${SLUG}`);
+// 1. Custom mode definition
+if (!NO_MODE) {
+  installModes();
+} else {
+  log("skip   .bob/custom_modes.yaml (--no-mode)");
+}
 
-// Copy skills if any are present in the source repo
-const skillsSrc = join(SRC, ".bob/skills");
-if (existsSync(skillsSrc) && statSync(skillsSrc).isDirectory()) {
-  const skillDirs = readdirSync(skillsSrc, { withFileTypes: true })
-    .filter((d) => d.isDirectory())
-    .map((d) => d.name);
-  if (skillDirs.length > 0) {
-    for (const skill of skillDirs) {
-      copy(`.bob/skills/${skill}`, `.bob/skills/${skill}`);
+// 2. Mode rules
+if (!NO_RULES) {
+  copy(`.bob/rules-${SLUG}`, `.bob/rules-${SLUG}`);
+} else {
+  log(`skip   .bob/rules-${SLUG}/ (--no-rules)`);
+}
+
+// 3. Skills
+if (!NO_SKILLS) {
+  const skillsSrc = join(SRC, ".bob/skills");
+  if (existsSync(skillsSrc) && statSync(skillsSrc).isDirectory()) {
+    const skillDirs = readdirSync(skillsSrc, { withFileTypes: true })
+      .filter((d) => d.isDirectory())
+      .map((d) => d.name);
+    if (skillDirs.length > 0) {
+      for (const skill of skillDirs) {
+        copy(`.bob/skills/${skill}`, `.bob/skills/${skill}`);
+      }
+    } else {
+      log("skip   .bob/skills/ (no skills found in source)");
     }
   } else {
-    log("skip   .bob/skills/ (no skills installed in source)");
+    log("skip   .bob/skills/ (directory absent in source)");
   }
 } else {
-  log("skip   .bob/skills/ (directory absent in source)");
+  log("skip   .bob/skills/ (--no-skills)");
 }
 
-if (flags.has("--with-mcp")) {
-  if (existsSync(join(TARGET, ".bob/mcp.json.example"))) {
-    log("skip   .bob/mcp.json.example (already exists)");
-  } else {
-    copy(".bob/mcp.json.example", ".bob/mcp.json.example");
+// 4. MCP example config
+if (!NO_MCP) {
+  copy(".bob/mcp.json.example", ".bob/mcp.json.example", { overwrite: FORCE });
+} else {
+  log("skip   .bob/mcp.json.example (--no-mcp)");
+}
+
+// 5. AGENTS.md
+if (!NO_AGENTS) {
+  copy("AGENTS.md", "AGENTS.md", { overwrite: FORCE });
+} else {
+  log("skip   AGENTS.md (--no-agents)");
+}
+
+// 6. Starter spec templates
+if (!NO_TEMPLATES) {
+  for (const [from, to] of [["specs/001-example", "specs/001-example"], ["specs/TEMPLATE", "specs/TEMPLATE"]]) {
+    copy(from, to, { overwrite: FORCE });
   }
+} else {
+  log("skip   specs/ (--no-templates)");
 }
 
-if (flags.has("--with-templates")) {
-  for (const [from, to] of [["AGENTS.md", "AGENTS.md"], ["specs/001-example", "specs/001-example"]]) {
-    if (existsSync(join(TARGET, to))) log(`skip   ${to} (already exists)`);
-    else copy(from, to);
-  }
-}
-
+// 7. Local-only Git ignore
 if (flags.has("--git-exclude")) {
   const gitDir = join(TARGET, ".git");
   if (!existsSync(gitDir) || !statSync(gitDir).isDirectory()) {
@@ -161,6 +239,6 @@ const nodeMajor = Number(process.versions.node.split(".")[0]);
 console.log(`\nDone. Next steps in ${TARGET}:`);
 console.log("  1. Reopen the folder in Bob and trust the workspace.");
 console.log("  2. Pick the 'Cloud Architect' mode.");
-console.log("  3. Optional: re-run with --with-mcp to add .bob/mcp.json.example for cloud doc MCP servers.");
-console.log("  4. Optional: re-run with --with-templates to add AGENTS.md and a starter spec.");
+console.log("  3. Fill in AGENTS.md and specs/ with your architecture requirements.");
+console.log("  4. Optional: configure cloud doc MCP servers in .bob/mcp.json (from .bob/mcp.json.example).");
 if (nodeMajor < 18) console.log("  Warning: Node >= 18 is required to run this installer.");

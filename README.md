@@ -21,11 +21,19 @@ npx github:krondor/bob-cloud-architect
 
 Or from a local checkout: `node /path/to/bob-cloud-architect/scripts/install.mjs /path/to/your-project`
 
+By default, the installer copies the mode definition, rules, skills, MCP configuration template (`.bob/mcp.json.example`), `AGENTS.md`, and starter spec templates (`specs/`).
+
 | Option | Effect |
 |---|---|
 | `--dry-run` | Print what would change; write nothing |
-| `--with-templates` | Also copy `AGENTS.md` if it does not already exist |
-| `--force` | Replace an existing `cloud-architect` block in `custom_modes.yaml` |
+| `--force` | Replace existing `cloud-architect` block and overwrite existing files |
+| `--git-exclude` | Add installed paths to `.git/info/exclude` (local-only ignore) |
+| `--no-agents` | Skip copying `AGENTS.md` |
+| `--no-mcp` | Skip copying `.bob/mcp.json.example` |
+| `--no-templates` | Skip copying starter specs (`specs/`) |
+| `--no-skills` | Skip copying `.bob/skills/` |
+| `--no-rules` | Skip copying `.bob/rules-cloud-architect/` |
+| `--no-mode` | Skip updating `.bob/custom_modes.yaml` |
 
 ## Setup
 
