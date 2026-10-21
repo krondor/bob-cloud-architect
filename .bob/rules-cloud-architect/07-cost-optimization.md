@@ -42,10 +42,10 @@ Use these terms consistently so cost language is comparable across deliverables.
 
 | Model | Cost pattern | Best for |
 |---|---|---|
-| Serverless (Lambda / Functions / Cloud Functions) | Pay-per-request; no idle cost | Bursty, event-driven, unpredictable volume |
+| Serverless (Lambda / Functions / Cloud Run functions) | Pay-per-request; no idle cost | Bursty, event-driven, unpredictable volume |
 | Container (ECS Fargate / Container Apps / Cloud Run) | Per vCPU-second; near-zero idle on scale-to-zero | Variable load; longer-running tasks; custom runtimes |
 | Always-on VM / managed instance | Idle cost always present; reserved discount available | Predictable, sustained load; stateful workloads |
-| Spot / preemptible / Spot VMs | 60–90% discount vs. on-demand; interruption risk | Batch, fault-tolerant, non-time-sensitive workloads |
+| Spot / preemptible / Spot VMs | Roughly 60–90% discount vs. on-demand (GCP advertises up to 91%); interruption risk | Batch, fault-tolerant, non-time-sensitive workloads |
 
 ### 2. Data transfer
 
@@ -54,7 +54,7 @@ Data transfer is frequently the largest unexpected cost driver in multi-cloud an
 | Pattern | Cost impact |
 |---|---|
 | Intra-region, same VPC | Typically free or negligible |
-| Cross-AZ within region | Low but non-zero on AWS and Azure; note in design |
+| Cross-AZ within region | Low but non-zero on AWS, Azure, and GCP (GCP inter-zone traffic is charged; Private Service Connect endpoint traffic is exempt); note in design |
 | Cross-region (same cloud) | Moderate; multiplier on data-intensive pipelines |
 | Internet egress (cloud → external) | Highest; primary cost driver for data export use cases |
 | Cross-cloud (cloud A → cloud B) | Internet egress rates on both sides; significant for data mesh |
@@ -94,8 +94,8 @@ Include the following in every architecture that will be deployed in a shared cl
 
 | Control | AWS | Azure | GCP |
 |---|---|---|---|
-| Resource tagging | Required tags: `env`, `project`, `owner`, `cost-center` | Same via Azure tags | Same via GCP labels |
-| Budget alerting | AWS Budgets with SNS alert at 80% and 100% | Azure Cost Management budget alerts | GCP Budgets with Pub/Sub notification |
+| Resource tagging | Required tags: `env`, `project`, `owner`, `cost-center` | Same via Azure tags | Same via GCP labels (project labels do not propagate to child resources; apply labels per resource) |
+| Budget alerting | AWS Budgets with SNS alert at 80% and 100% | Azure Cost Management budget alerts | GCP Budgets with email threshold alerts; add Pub/Sub notifications for programmatic response |
 | Cost allocation | Cost Explorer with tag-based grouping | Cost Management + Billing with resource groups | Cloud Billing reports with label filters |
 | Rightsizing | Compute Optimizer | Azure Advisor | Recommender API |
 

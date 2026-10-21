@@ -34,10 +34,10 @@ Extend the base mapping in `02-multi-cloud-parity.md` with HA-relevant services.
 | Global load balancer | Global Accelerator | Azure Front Door | Cloud Load Balancing (global) |
 | Multi-region relational DB | Aurora Global Database | Cosmos DB (multi-region writes) / Azure SQL geo-replication | Cloud Spanner (multi-region) / AlloyDB cross-region replica |
 | Multi-region key-value / document | DynamoDB Global Tables | Cosmos DB | Firestore (multi-region) |
-| Multi-region object storage | S3 Cross-Region Replication | Azure Blob Storage geo-redundant (GRS/GZRS) | Cloud Storage dual-region / multi-region buckets |
-| Multi-region queue / messaging | SQS (no native cross-region; use SNS cross-region delivery to fan out to SQS in secondary region) | Service Bus Geo-Replication (Premium tier; replicates messages + metadata) or Geo-Disaster Recovery (metadata only) | Pub/Sub (global by default) |
+| Multi-region object storage | S3 Cross-Region Replication | Azure Blob Storage geo-redundant (GRS/GZRS) | Cloud Storage dual-region / multi-region buckets (default replication targets 100% of new objects within 12 hours; enable turbo replication on dual-region buckets for a 15-minute RPO) |
+| Multi-region queue / messaging | SQS (no native cross-region; use SNS cross-region delivery to fan out to SQS in secondary region) | Service Bus Geo-Replication (Premium tier; replicates messages + metadata) or Geo-Disaster Recovery (metadata only) | Pub/Sub (global service; publishing to the global endpoint stores messages in the nearest allowed region; set a message storage policy for data residency, which covers message contents only) |
 | Health monitoring | Route 53 health checks + CloudWatch | Azure Monitor + Traffic Manager probes | Cloud Monitoring uptime checks |
-| Failover orchestration | Route 53 DNS failover | Traffic Manager automatic failover | Cloud Load Balancing backend failover |
+| Failover orchestration | Route 53 DNS failover | Traffic Manager automatic failover | Cloud Load Balancing backend failover (single anycast IP, no DNS change); Cloud DNS failover/geolocation policies health-check only internal load balancers and external endpoints |
 
 ---
 
@@ -50,11 +50,11 @@ Design failover at three levels. Document which levels are in scope for the acti
 - Fastest to recover for external clients (DNS TTL ≤ 60 seconds)
 - Requires health checks on the primary endpoint
 - Not suitable when TTL propagation is unacceptable (sub-minute RTO)
-- Tools: Route 53 failover routing, Azure Traffic Manager, Cloud DNS + health checks
+- Tools: Route 53 failover routing, Azure Traffic Manager, Cloud DNS routing policies with health checks (internal load balancers and external endpoints only; automatic failover does not occur when geofencing is enabled)
 
 ### Load-balancer-level failover
 
-- Sub-second failover for traffic already in-region
+- Fast failover for traffic already in-region (actual failover time depends on health check interval and thresholds; validate against RTO rather than assuming sub-second)
 - Requires backend health checks and multiple healthy targets
 - Appropriate when active-active across AZs is sufficient and multi-region is not needed
 - Tools: ALB / NLB (AWS), Azure Load Balancer / Application Gateway, Cloud Load Balancing (GCP)
