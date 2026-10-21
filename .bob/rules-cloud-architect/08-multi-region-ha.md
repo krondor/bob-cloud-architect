@@ -1,45 +1,10 @@
-<!-- load when: spec or task mentions high availability, disaster recovery, multi-region, RPO, RTO, failover, active-active, active-passive, or data residency -->
+<!-- always active -->
 
 # Multi-Region and High Availability Design
 
-Every production architecture must address HA and DR. This file defines the patterns, decision
-criteria, and required deliverable content for multi-region and HA design.
-
-## HA pattern selection
-
-### Decision criteria
-
-Choose the HA pattern based on the RPO/RTO targets in the spec. If they are not stated, surface
-them as open decisions before producing the HA section.
-
-| Pattern | RPO | RTO | Cost multiplier | Use when |
-|---|---|---|---|---|
-| **Active-active** | Near-zero (seconds) | Near-zero (seconds) | ~2× + replication | Both regions serve traffic simultaneously; zero-downtime failover required |
-| **Active-passive (hot standby)** | Seconds to minutes | Minutes | ~1.5–2× | Primary region serves all traffic; standby is warm and can take over quickly |
-| **Pilot-light** | Minutes | 10–30 minutes | ~1.1–1.3× | Core components always running in DR region; scale-up on failover |
-| **Backup and restore** | Hours | Hours | ~1.05× | Low criticality; recovery from backup is acceptable; lowest cost |
-
-**Rule:** Never choose a pattern without RPO/RTO targets. If the spec does not state them,
-add them as open decisions before producing the HA section.
-
----
-
-## Multi-region service mapping
-
-Extend the base mapping in `02-multi-cloud-parity.md` with HA-relevant services.
-
-| Capability | AWS | Azure | GCP |
-|---|---|---|---|
-| Global DNS / traffic routing | Route 53 (latency/failover routing) | Azure Traffic Manager / Front Door | Cloud DNS + Cloud Load Balancing |
-| Global load balancer | Global Accelerator | Azure Front Door | Cloud Load Balancing (global) |
-| Multi-region relational DB | Aurora Global Database | Cosmos DB (multi-region writes) / Azure SQL geo-replication | Cloud Spanner (multi-region) / AlloyDB cross-region replica |
-| Multi-region key-value / document | DynamoDB Global Tables | Cosmos DB | Firestore (multi-region) |
-| Multi-region object storage | S3 Cross-Region Replication | Azure Blob Storage geo-redundant (GRS/GZRS) | Cloud Storage dual-region / multi-region buckets (default replication targets 100% of new objects within 12 hours; enable turbo replication on dual-region buckets for a 15-minute RPO) |
-| Multi-region queue / messaging | SQS (no native cross-region; use SNS cross-region delivery to fan out to SQS in secondary region) | Service Bus Geo-Replication (Premium tier; replicates messages + metadata) or Geo-Disaster Recovery (metadata only) | Pub/Sub (global service; publishing to the global endpoint stores messages in the nearest allowed region; set a message storage policy for data residency, which covers message contents only) |
-| Health monitoring | Route 53 health checks + CloudWatch | Azure Monitor + Traffic Manager probes | Cloud Monitoring uptime checks |
-| Failover orchestration | Route 53 DNS failover | Traffic Manager automatic failover | Cloud Load Balancing backend failover (single anycast IP, no DNS change); Cloud DNS failover/geolocation policies health-check only internal load balancers and external endpoints |
-
----
+> **Note:** HA pattern selection criteria and multi-region service mapping are consolidated in
+> `02-multi-cloud-parity.md`. This file provides detailed failover design guidance and required
+> deliverable content for multi-region and HA tasks.
 
 ## Failover design levels
 
@@ -47,69 +12,29 @@ Design failover at three levels. Document which levels are in scope for the acti
 
 ### DNS-level failover
 
-- Fastest to recover for external clients (DNS TTL ≤ 60 seconds)
-- Requires health checks on the primary endpoint
-- Not suitable when TTL propagation is unacceptable (sub-minute RTO)
-- Tools: Route 53 failover routing, Azure Traffic Manager, Cloud DNS routing policies with health checks (internal load balancers and external endpoints only; automatic failover does not occur when geofencing is enabled)
+| Detail | Value |
+|---|---|
+| Recovery order | 30–120 s (TTL-bound) |
+| Requirement | Health checks on primary endpoint; set TTL ≤ 60 s |
+| Limitation | Not suitable when sub-minute RTO is required |
+| Tools | Route 53 failover routing / Azure Traffic Manager / Cloud DNS routing policy (health-checks internal LBs and external endpoints only; automatic failover does not occur when geofencing is enabled) |
 
 ### Load-balancer-level failover
 
-- Fast failover for traffic already in-region (actual failover time depends on health check interval and thresholds; validate against RTO rather than assuming sub-second)
-- Requires backend health checks and multiple healthy targets
-- Appropriate when active-active across AZs is sufficient and multi-region is not needed
-- Tools: ALB / NLB (AWS), Azure Load Balancer / Application Gateway, Cloud Load Balancing (GCP)
+| Detail | Value |
+|---|---|
+| Recovery order | Seconds (health check interval + threshold) |
+| Requirement | Multiple healthy backend targets; health checks configured |
+| Use when | Active-active across AZs; sub-minute RTO within region |
+| Tools | ALB/NLB / Azure Application Gateway + LB / Cloud Load Balancing (single anycast IP; no DNS change on failover) |
 
 ### Application-level failover
 
-- Most complex; handles stateful failover (sessions, in-flight transactions)
-- Required when the application must coordinate its own leader election or state handoff
-- Use managed services (Aurora Global Database, Cosmos DB) to delegate this complexity where possible
-
----
-
-## Data residency
-
-When the spec states data residency constraints, reflect them in region selection for every
-service. Document the following for each constrained data type:
-
-| Field | Content |
+| Detail | Value |
 |---|---|
-| Data type | e.g. "patient records", "financial transactions" |
-| Residency constraint | e.g. "EU only (GDPR Article 44)", "US only (contractual)" |
-| Services affected | List every service that stores or processes this data type |
-| Region selection | The approved region(s) for each affected service |
-| Cross-region transfer | Whether transfer is ever permitted and under what conditions |
-
-**Rule:** If data residency constraints are stated in the spec, every service in the deliverable
-must have an explicit region assignment. Do not leave region as "TBD" for constrained data types.
-
----
-
-## Required HA section in the deliverable
-
-When an HA or DR task is in scope, add the following section to the architecture document
-(insert after Section 6 — Failure Handling Design in the standard deliverable format):
-
-```
-## High Availability and Disaster Recovery
-
-### RPO and RTO targets
-| Tier | RPO | RTO | Source |
-|---|---|---|---|
-| <component or data type> | <target> | <target> | <spec section or open decision #> |
-
-### HA pattern
-<chosen pattern and rationale>
-
-### Multi-region topology diagram
-<Mermaid flowchart showing primary region, DR region, replication paths, and failover routing>
-
-### Failover runbook pointer
-<Reference to the runbook location — not the full content>
-
-### Data residency mapping
-<Table per constrained data type — or "no residency constraints stated in spec">
-```
+| Recovery order | Sub-second to seconds |
+| Use when | Stateful failover; sessions, in-flight transactions, leader election |
+| Recommendation | Delegate to managed multi-region services (Aurora Global, Cosmos DB, Cloud Spanner) |
 
 ---
 
@@ -117,8 +42,53 @@ When an HA or DR task is in scope, add the following section to the architecture
 
 | Gap | Risk | Remediation |
 |---|---|---|
-| RPO/RTO not stated | HA pattern chosen without knowing the requirement; may be over- or under-designed | Add as open decision; get business owner to sign off |
-| Single-region database with multi-region compute | Compute failover succeeds but DB is unavailable; illusory HA | Use multi-region DB or explicitly document the single-region DB as a known single point of failure |
-| DNS TTL too high | Failover takes longer than RTO because clients cache the old IP | Set TTL ≤ 60s for failover-eligible records; document the tradeoff |
-| No data replication lag SLA | DR region has stale data; RPO is violated without warning | Monitor replication lag; alert when lag exceeds RPO target |
-| Failover never tested | Recovery procedure exists on paper but fails in practice | Include "failover drill" in the implementation plan as a required task before GA |
+| RPO/RTO not stated | Pattern chosen without knowing the requirement | Add as open decision; get business owner to sign off |
+| Single-region DB with multi-region compute | Compute failover succeeds but DB unavailable | Use multi-region DB or explicitly document as known SPOF |
+| DNS TTL too high | Failover exceeds RTO because clients cache old IP | Set TTL ≤ 60 s for failover-eligible records |
+| No replication lag SLA | DR region has stale data; RPO violated without warning | Monitor replication lag; alert when lag exceeds RPO target |
+| Failover never tested | Recovery procedure exists on paper but fails in practice | Include failover drill in implementation plan as required task before GA |
+| Batch buffer overflow on failover | In-flight batch items lost during region switch | Document buffer drain strategy; prefer idempotent replay |
+
+---
+
+## Required HA section in the deliverable
+
+Add after Section 6 — Failure Handling Design:
+
+```
+## High Availability and Disaster Recovery
+
+### RPO and RTO targets
+| Component / data type | RPO | RTO | Source |
+|---|---|---|---|
+| <component> | <target> | <target> | <spec section or open decision #> |
+
+### HA pattern and rationale
+<chosen pattern; reference pattern selection table in 02-multi-cloud-parity.md>
+
+### Multi-region topology diagram
+<Mermaid flowchart: primary region, DR region, replication paths, failover routing>
+
+### Data residency mapping
+<Table per constrained data type — or "no residency constraints stated in spec">
+
+### Failover runbook pointer
+<Reference to runbook location — not full content>
+```
+
+---
+
+## Data residency documentation template
+
+When the spec states residency constraints:
+
+| Field | Content |
+|---|---|
+| Data type | e.g. "patient records", "regulatory documents" |
+| Residency constraint | e.g. "US only (contractual)" |
+| Services affected | Every service that stores or processes this data type |
+| Region selection | Approved region(s) for each affected service |
+| Cross-region transfer | Whether transfer is ever permitted and under what conditions |
+
+**Rule:** Every service in the deliverable must have an explicit region assignment for constrained
+data types. Do not leave region as "TBD" for any constrained data type.
