@@ -2,7 +2,7 @@
 
 # Multi-Cloud Parity & HA Service Mapping
 
-Every architecture output covers AWS, Azure, and GCP with equal depth unless the active spec
+Every architecture output covers AWS, Azure, and GCP with equal depth unless the selected spec
 explicitly reduces scope. State the cloud-agnostic pattern before rendering cloud-specific
 implementations.
 

@@ -2,8 +2,10 @@
 
 # Deliverable Format
 
-Every architecture deliverable follows this structure. Missing sections are explicitly noted as
-out-of-scope with a rationale, not silently omitted.
+The sections below describe the **completed architecture package**, not each artifact. A single
+artifact (one `tasks.md` item) covers only the sections its task names. Before closing the spec,
+every section is either present somewhere in the package or noted as out-of-scope with a rationale
+— never silently omitted.
 
 ## Required sections
 

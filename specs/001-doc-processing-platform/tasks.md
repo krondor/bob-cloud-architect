@@ -1,7 +1,7 @@
 # tasks.md
 
 **Spec ID:** 001-doc-processing-platform
-**Status:** active
+**Status:** in-progress
 
 ---
 

@@ -8,7 +8,7 @@
 
 ## Failover design levels
 
-Design failover at three levels. Document which levels are in scope for the active spec.
+Design failover at three levels. Document which levels are in scope for the selected spec.
 
 ### DNS-level failover
 

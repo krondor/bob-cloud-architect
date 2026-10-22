@@ -8,7 +8,7 @@ Keep it short, accurate, and reviewed like code. Update it when conventions chan
 
 ## Purpose of this mode
 
-This workspace uses the `cloud-architect` Bob mode to design production-ready, multi-cloud, event-driven architectures. The agent's role is to work from a written, approved spec and produce architecture deliverables. No implementation code is written in this workspace.
+This workspace uses the `cloud-architect` Bob mode to design production-ready, multi-cloud, event-driven architectures. In that mode the agent works from a written spec whose requirements a human has approved, and produces architecture deliverables. The no-implementation restriction applies to the `cloud-architect` mode only; other modes follow their own instructions.
 
 **Workspace layout:**
 
@@ -23,15 +23,15 @@ docs/           Architecture outputs produced by the agent (diagrams, decisions,
 
 ## Spec-driven workflow
 
-All architecture work is spec-driven. No architecture deliverable is produced until a spec exists and is approved.
+All architecture work is spec-driven. No architecture deliverable is produced until a spec exists and a human has approved its requirements.
 
-1. **Specify** (`specs/<NNN-name>/spec.md`): business requirements, goals, scope, constraints, risks, and testable acceptance criteria. This is the client's input — the agent does not author the spec without human direction.
+1. **Specify** (`specs/<NNN-name>/spec.md`): business requirements, goals, scope, constraints, risks, and testable acceptance criteria. The human owns the requirements. If no spec exists, the agent may draft one from the user's request (status `draft`, approval `pending`, unknowns listed as open decisions); only a human sets approval.
 2. **Plan** (`specs/<NNN>/plan.md`): architecture approach, cloud selection rationale, integration targets, security posture, open decisions.
 3. **Tasks** (`specs/<NNN>/tasks.md`): ordered deliverable checklist — each item one reviewable output (e.g. high-level diagram, component matrix, security design).
 4. **Produce**: one deliverable at a time, grounded in the spec.
 5. **Verify**: map every spec acceptance criterion to evidence before closing the spec.
 
-The agent reads the active spec before beginning any session. If no spec exists, the agent asks the user to create one before proceeding.
+The agent selects the spec the user names (or the only non-accepted one) before beginning any session. If none exists, it drafts one for approval. Status values: `draft`, `in-progress`, `ready-for-review`, `accepted`. Approval is a separate `Requirements approval` field recorded against a spec revision; a material change resets it to `pending`.
 
 ---
 

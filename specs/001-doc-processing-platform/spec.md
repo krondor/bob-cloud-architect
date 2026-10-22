@@ -2,7 +2,8 @@
 
 **Spec ID:** 001-doc-processing-platform
 **Mode:** cloud-architect
-**Status:** active
+**Status:** in-progress
+**Requirements approval:** pending <!-- example spec: a human sets this to "approved by <name> on <date> at <revision>" before running the mode -->
 **Created:** 2025-01-27
 **Author:** enterprise-poc-team
 

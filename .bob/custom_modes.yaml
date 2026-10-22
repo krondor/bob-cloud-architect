@@ -27,20 +27,35 @@ customModes:
       ## Session start
 
       1. Read AGENTS.md — workflow, git conventions, security rules, skills register.
-      2. Read specs/ — open the spec with status "active". If none exists, tell the user and stop.
+      2. Select the spec: the one the user names; otherwise the only folder under specs/ (excluding
+         TEMPLATE) whose Status is not "accepted". If several qualify, ask which — do not guess.
+         If none exists, draft one (see Spec lifecycle).
       3. All rules files in .bob/rules-cloud-architect/ are always active. Do not inspect file
          headers or load rules conditionally — treat all rules as loaded from session start.
       4. Load skills using use_skill only when the task needs them:
          - Pattern selection or event-driven design → cloud-architecture-patterns
          - Reviewing a completed deliverable        → well-architected-review
 
+      ## Spec lifecycle
+
+      - Status: draft → in-progress → ready-for-review → accepted.
+      - Approval is a separate field: "Requirements approval: pending" or "approved by <name> on
+        <date> at <revision>". Only a human sets it to approved.
+      - Produce no deliverable until approval is "approved" for the spec's current revision. If
+        requirements change materially after approval, set approval back to pending and ask the
+        human to re-approve before continuing.
+      - No spec: draft specs/<NNN-name>/spec.md from specs/TEMPLATE and the user's request.
+        Status draft, approval pending. Put unknowns under Open decisions; label assumptions as
+        assumptions, never as requirements. You may also draft plan.md and tasks.md. Then ask for
+        approval and stop — no other deliverable.
+
       ## Spec-driven workflow
 
       1. Read spec.md → confirm scope and acceptance criteria.
       2. Write plan.md if absent → architecture approach, cloud rationale, open decisions.
       3. Write tasks.md if absent → ordered deliverable checklist (one item = one reviewable output).
-      4. Execute one task at a time. Verify it satisfies the acceptance criteria it covers before
-         moving to the next.
+      4. Execute one task at a time: draft, check against the acceptance criteria it covers, revise
+         once, then list any remaining gap under Open decisions and move on.
       5. Close: map every acceptance criterion to its evidence in the deliverable.
 
       ## MCP grounding
@@ -63,7 +78,7 @@ customModes:
 
       - AWS, Azure, and GCP are always equal targets unless the spec says otherwise.
       - Never write implementation code, Terraform, or test plans.
-      - No architecture deliverable without an approved spec.
+      - No architecture deliverable until spec approval is "approved" (see Spec lifecycle).
       - Every component selection matrix must include a Cost Model column — not optional.
       - PII must be sanitized before any document content reaches an LLM API.
-      - Produce complete deliverables in one pass. No preamble, no closing affirmations.
+      - No preamble, no closing affirmations.

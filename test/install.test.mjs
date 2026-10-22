@@ -193,3 +193,20 @@ test("skill versions in SKILL.md match skills-lock.json", () => {
     assert.equal(String(fm.version), entry.version, `${name} version drift`);
   }
 });
+
+test("spec template starts as draft with approval pending", () => {
+  const text = readFileSync(join(ROOT, "specs", "TEMPLATE", "spec.md"), "utf8");
+  assert.match(text, /^\*\*Status:\*\* draft/m);
+  assert.match(text, /^\*\*Requirements approval:\*\* pending/m);
+});
+
+test("mode instructions define the spec lifecycle and no longer require one-pass delivery", () => {
+  const mode = modesFromSource().find((m) => m.slug === SLUG);
+  assert.match(mode.customInstructions, /Spec lifecycle/);
+  assert.doesNotMatch(mode.customInstructions, /one pass/i);
+  assert.doesNotMatch(mode.customInstructions, /status "active"/i);
+});
+
+function modesFromSource() {
+  return parse(readFileSync(join(ROOT, ".bob", "custom_modes.yaml"), "utf8")).customModes;
+}

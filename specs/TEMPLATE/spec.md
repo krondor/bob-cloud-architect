@@ -2,7 +2,8 @@
 
 **Spec ID:** <!-- e.g. 001-event-platform-arch -->
 **Mode:** cloud-architect
-**Status:** draft
+**Status:** draft <!-- draft | in-progress | ready-for-review | accepted -->
+**Requirements approval:** pending <!-- pending | approved by <name> on <YYYY-MM-DD> at <revision> -->
 **Created:** <!-- YYYY-MM-DD -->
 **Author:** <!-- name -->
 
