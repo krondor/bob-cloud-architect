@@ -61,6 +61,43 @@ By default, the installer copies the mode definition, rules, skills, MCP configu
 8. Data models
 9. Implementation plan
 
+## Spec-driven workflow & folder structure
+
+All architecture work in this mode is spec-driven. Work items are organized in the `specs/` directory, where each folder represents an isolated engagement, feature, or platform capability:
+
+```
+specs/
+  ├── TEMPLATE/                         # Starter scaffold (spec.md, plan.md, tasks.md)
+  └── 001-doc-processing-platform/      # Engagement folder
+      ├── spec.md                       # Requirements & acceptance criteria (Human-authored)
+      ├── plan.md                       # Architecture strategy & patterns (Agent-drafted)
+      └── tasks.md                      # Ordered deliverable checklist (Agent/Human-managed)
+```
+
+### The 3-file spec lifecycle
+
+| File | Primary Owner | Purpose | Division of Labor |
+|---|---|---|---|
+| **`spec.md`** | **Human** | **The "What & Why"** | Defines business problem, scope boundaries, target clouds, integration targets, constraints, and testable acceptance criteria. The agent never invents business requirements without human direction. |
+| **`plan.md`** | **Agent** (Human reviews) | **The "How"** | High-level architectural strategy, selected design patterns (Saga, Outbox, Batch Aggregator), cloud selection rationale, security posture, and open decisions. Drafted automatically by the agent if missing. |
+| **`tasks.md`** | **Agent / Human** | **The Checklist** | Ordered, reviewable deliverable items derived from `spec.md` scope (e.g. Task 1: Mermaid diagrams, Task 2: Component matrix, Task 3: Security design). Executed one task at a time. |
+
+### How Bob processes specs
+
+When starting a session in `cloud-architect` mode, Bob discovers the active spec, ensures supporting planning documents exist, and executes deliverables sequentially:
+
+```mermaid
+flowchart TD
+    User["Human: Creates specs/<NNN-name>/spec.md\n(Status: active)"] --> Start["Agent: Reads AGENTS.md and active spec.md"]
+    Start --> CheckPlan{"plan.md exists?"}
+    CheckPlan -- "No" --> DraftPlan["Agent: Drafts plan.md from spec"]
+    CheckPlan -- "Yes" --> CheckTasks{"tasks.md exists?"}
+    DraftPlan --> CheckTasks
+    CheckTasks -- "No" --> DeriveTasks["Agent: Derives tasks.md checklist"]
+    CheckTasks -- "Yes" --> Exec["Agent: Executes tasks.md one task at a time\nProduces diagrams, matrices, schemas in docs/"]
+    Exec --> Verify["Agent: Verifies all Acceptance Criteria\nMaps evidence in deliverables to spec"]
+```
+
 ## Review before use
 
 - **Not yet run against a real engagement.** Mode YAML syntax has been validated; first pilot run is the real test.
@@ -212,9 +249,12 @@ Copy `.bob/mcp.json.example` to `.bob/mcp.json`. The mode has three documentatio
 
 **Corporate networks:** if your proxy blocks the default User-Agent, add `"MCP_USER_AGENT": "<your-browser-UA>"` to the `env` block of the AWS server entry.
 
-### Update the spec template
+### Starting a new engagement / spec
 
-An example spec lives in `specs/001-doc-processing-platform/spec.md`. Copy `specs/TEMPLATE/spec.md` to a new directory (e.g. `specs/my-project/`) and fill it in. The agent reads specs at session start — the active spec drives what it produces.
+An example spec lives in `specs/001-doc-processing-platform/spec.md`. To start a new architecture engagement:
+1. Copy `specs/TEMPLATE/` to a new folder (e.g. `specs/002-my-platform/`).
+2. Fill in `spec.md` with your business problem, scope, target clouds, integrations, and acceptance criteria. Set `Status: active`.
+3. You only need to author `spec.md`. When you start your session in Bob, the agent will automatically read `spec.md` and draft `plan.md` and `tasks.md` for your review before generating deliverables.
 
 ## Contributing via git
 
