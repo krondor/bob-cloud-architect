@@ -1,4 +1,4 @@
-<!-- load when: producing any security design section: IAM/RBAC, encryption, secrets management, audit logging, or data governance -->
+<!-- always active -->
 
 # Security Design
 

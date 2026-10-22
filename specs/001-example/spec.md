@@ -2,7 +2,7 @@
 
 **Spec ID:** 001-example
 **Mode:** cloud-architect
-**Status:** draft
+**Status:** archived
 **Created:** 2025-01-27
 **Author:** example
 

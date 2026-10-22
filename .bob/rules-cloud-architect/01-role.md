@@ -1,4 +1,4 @@
-<!-- load when: session start — read at the beginning of every session -->
+<!-- always active -->
 
 # Role Identity
 
