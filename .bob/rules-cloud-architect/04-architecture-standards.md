@@ -31,7 +31,7 @@ Use the table below to select the primary pattern; record the rationale as an AD
 
 ## ADR format
 
-Record non-obvious design choices as ADRs in `docs/<spec-id>-adr-NNN.md` or in the deliverable's Open Decisions section.
+Record non-obvious design choices as ADRs in `docs/<NNN>-adr-<MMM>.md` (`<NNN>` = spec number, `<MMM>` = ADR sequence within that spec) or in the deliverable's Open Decisions section.
 
 ```
 # ADR-NNN: <short title>

@@ -14,7 +14,8 @@ This workspace uses the `cloud-architect` Bob mode to design production-ready, m
 
 ```
 specs/          Spec-driven work: spec.md, plan.md, tasks.md per feature or system
-docs/           Architecture outputs produced by the agent (diagrams, decisions, models)
+docs/           Architecture outputs produced by the agent (diagrams, decisions, models).
+                Shared across specs: every file MUST be prefixed with the spec number, e.g. docs/001-component-matrix.md
 .bob/           Bob config: custom mode, rules, MCP example
 ```
 

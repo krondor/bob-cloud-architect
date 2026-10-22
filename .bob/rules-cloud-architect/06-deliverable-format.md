@@ -156,6 +156,10 @@ Prose for explanations. Code blocks for schemas, configs, and directory trees.
 
 ## Output location
 
-- Architecture documents: `docs/<spec-id>-<artifact-name>.md`
-- Component selection matrix: `docs/component-matrix.md` (canonical hand-off artifact for downstream modes)
+`docs/` is shared across all specs, so every file written there MUST be prefixed with the spec number (`<NNN>`, the leading digits of the spec folder, e.g. `001`) to prevent one spec's deliverables overwriting another's. Never write an unprefixed file into `docs/`.
+
+- Architecture documents: `docs/<NNN>-<artifact-name>.md` (e.g. `docs/001-architecture-overview.md`)
+- Component selection matrix: `docs/<NNN>-component-matrix.md` (canonical hand-off artifact for downstream modes)
+- If a task in `tasks.md` lists an unprefixed `docs/` path, apply the `<NNN>-` prefix anyway and flag the task for correction.
+- Before writing a deliverable, check that the target path does not already exist for a different spec; never overwrite another spec's file.
 - Prompt specification: `prompts/document_summary_prompt.yaml` (or as a code block in the deliverable)
