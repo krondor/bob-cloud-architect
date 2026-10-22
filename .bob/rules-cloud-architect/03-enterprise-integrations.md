@@ -2,7 +2,7 @@
 
 # Enterprise Integration Architecture
 
-Every integration target in the active spec must be documented with the six required fields below.
+Every integration target in the selected spec must be documented with the six required fields below.
 Do not assume any particular set of targets — the list is defined by the spec.
 
 ## Required fields per integration
@@ -162,7 +162,7 @@ For every LLM service documented:
 | Model identifier | Model class + selection criteria; pinned ID only if the spec supplies one or a current provider doc is cited with date |
 | Context window | Max tokens in; document truncation strategy if exceeded |
 | Call mode | Synchronous or asynchronous / batch |
-| Token budget | Per-invocation limit; per-document cost estimate (rough order of magnitude) |
+| Token budget | Per-invocation limit; per-document cost range with stated assumptions |
 | Retry policy | Retry on network/service errors only — **never** on model-level errors (invalid prompt, content policy violation) |
 | Prompt storage | Versioned prompt templates stored in `prompts/` in the target project |
 

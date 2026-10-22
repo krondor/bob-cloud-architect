@@ -31,7 +31,7 @@
     "well-architected-review": {
       "source": "local",
       "type": "custom",
-      "version": "1.1.0",
+      "version": "1.1.1",
       "path": ".bob/skills/well-architected-review/SKILL.md",
       "description": "Structured five-pillar architecture review mapped to AWS WAF, Azure WAF, and Google Cloud Architecture Framework pillars.",
       "authored": "2025-01-27"

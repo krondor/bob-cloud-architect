@@ -64,14 +64,15 @@ Always specify storage tier and lifecycle policy for compliance-retained data (I
 
 ## LLM token cost note
 
-Every LLM integration must include a rough order-of-magnitude token cost estimate:
+Every LLM integration must include an assumption-labelled token cost range:
 - Input tokens per document (estimate based on average document size)
 - Output tokens per summary
 - Cloud LLM cost: price per 1M tokens × estimated volume = monthly cost range
 - Snowflake Cortex cost: Snowflake credits per token (reference current Cortex credit table)
 
-Do not produce specific dollar estimates. Produce cost *patterns* and relative comparisons only.
-When the spec requires a dollar estimate, note it as an open decision requiring a FinOps review.
+State every assumption (volume, document size, unit price with source and date). Give a range,
+never a single-point or invoice-grade figure, and label it as an estimate.
+When the spec requires a firm dollar figure, record it as an open decision requiring a FinOps review.
 
 ---
 

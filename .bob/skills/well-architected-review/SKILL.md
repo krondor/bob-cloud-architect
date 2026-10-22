@@ -1,6 +1,6 @@
 ---
 name: well-architected-review
-version: 1.1.0
+version: 1.1.1
 description: >
   Structured five-pillar architecture review mapped to AWS Well-Architected Framework,
   Azure Well-Architected Framework, and Google Cloud's architecture pillars. Use to
@@ -160,7 +160,7 @@ when_to_use: >
 ### Review questions
 
 1. **[POC]** Is a Cost Model column present in the component selection matrix (mandatory — not optional)?
-2. **[POC]** Is a token cost estimate present for every LLM integration (input/output tokens, rough monthly range)?
+2. **[POC]** Is a token cost range present for every LLM integration (input/output tokens, monthly range, assumptions stated)?
 3. **[POC]** Is storage tiering documented for Iceberg Parquet files and the reconciliation ledger (with lifecycle policy)?
 4. Are resource tagging and cost allocation controls documented?
 5. Is there a budget alerting mechanism specified?
