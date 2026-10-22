@@ -60,14 +60,15 @@ Keep PRs focused. One logical change per PR. A PR that adds a new rules file and
 Include in the PR description:
 - What changed and why
 - How to verify the change (e.g. "Install into a test workspace with `--dry-run` and confirm output")
-- Whether the change affects the dispatch table in `custom_modes.yaml` (if yes, confirm it was updated)
+- Whether the change adds or removes always-loaded instructions (rules, `customInstructions`, `AGENTS.md`) and roughly how much
 
 ## Adding a rules file
 
-1. Create `.bob/rules-cloud-architect/NN-<name>.md` using the next available two-digit prefix.
-2. Start the file with `<!-- load when: <condition> -->` on the first line.
-3. Add a matching entry to the dispatch table in `.bob/custom_modes.yaml` under `customInstructions` — without this, the agent will never load the file.
-4. Include the new file in your PR with a brief explanation of what gap it fills.
+Bob loads every file in `.bob/rules-cloud-architect/` for this mode on every session, so a rules file is a standing cost. Add one only for a constraint that applies to every task; otherwise add a skill.
+
+1. Create `.bob/rules-cloud-architect/NN-<name>.md` using the next available two-digit prefix. No registration is needed.
+2. Check it does not contradict an existing rule or `customInstructions` (grep for the key terms).
+3. Include the new file in your PR with a brief explanation of what gap it fills.
 
 ## Adding or updating a skill
 
@@ -96,7 +97,6 @@ If you added or modified a rules file, open the mode in Bob against the `specs/0
 PRs are reviewed for:
 - Accuracy of any cloud service, IaC, or security claims in rules files
 - Consistency with the existing rules style (concise, prescriptive, no prose padding)
-- Correct `<!-- load when: ... -->` header on any new rules file
-- Dispatch table updated if a new rules file was added
+- No contradiction with existing rules or `customInstructions`; a justified addition to always-loaded context
 - No org-specific or client-specific content
 - `skills-lock.json` updated if a skill was added or changed

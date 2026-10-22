@@ -81,17 +81,17 @@ specs/
 
 | File | Primary Owner | Purpose | Division of Labor |
 |---|---|---|---|
-| **`spec.md`** | **Human** | **The "What & Why"** | Defines business problem, scope boundaries, target clouds, integration targets, constraints, and testable acceptance criteria. The agent never invents business requirements without human direction. |
+| **`spec.md`** | **Human** (agent may draft if missing) | **The "What & Why"** | Defines business problem, scope boundaries, target clouds, integration targets, constraints, and testable acceptance criteria. The agent never invents business requirements: a drafted spec lists unknowns as open decisions and stays `Requirements approval: pending` until a human approves it. |
 | **`plan.md`** | **Agent** (Human reviews) | **The "How"** | High-level architectural strategy, selected design patterns (Saga, Outbox, Batch Aggregator), cloud selection rationale, security posture, and open decisions. Drafted automatically by the agent if missing. |
 | **`tasks.md`** | **Agent / Human** | **The Checklist** | Ordered, reviewable deliverable items derived from `spec.md` scope (e.g. Task 1: Mermaid diagrams, Task 2: Component matrix, Task 3: Security design). Executed one task at a time. |
 
 ### How Bob processes specs
 
-When starting a session in `cloud-architect` mode, Bob discovers the active spec, ensures supporting planning documents exist, and executes deliverables sequentially:
+When starting a session in `cloud-architect` mode, Bob selects the spec, checks that a human has approved its requirements, ensures supporting planning documents exist, and executes deliverables sequentially. Status (`draft`, `in-progress`, `ready-for-review`, `accepted`) tracks progress; `Requirements approval` is a separate field, set only by a human and recorded against a revision.
 
 ```mermaid
 flowchart TD
-    User["Human: Creates specs/<NNN-name>/spec.md\n(Status: active)"] --> Start["Agent: Reads AGENTS.md and active spec.md"]
+    User["Human: Provides or approves specs/<NNN-name>/spec.md\n(Requirements approval: approved)"] --> Start["Agent: Reads AGENTS.md and the selected spec.md"]
     Start --> CheckPlan{"plan.md exists?"}
     CheckPlan -- "No" --> DraftPlan["Agent: Drafts plan.md from spec"]
     CheckPlan -- "Yes" --> CheckTasks{"tasks.md exists?"}
@@ -109,7 +109,7 @@ flowchart TD
 
 ## How Bob processes this workspace
 
-Understanding what Bob loads — and when — helps you decide where to put new guidance. Bob has a fixed context window of **270,000 tokens**. Every configuration layer consumes part of it before you type your first prompt.
+Understanding what Bob loads — and when — helps you decide where to put new guidance. Bob's context window is limited (Bob's documentation cites 200,000–270,000 tokens depending on the page; check your Bob version), and every configuration layer consumes part of it before you type your first prompt.
 
 ### Context window loading order
 
@@ -117,7 +117,7 @@ Understanding what Bob loads — and when — helps you decide where to put new 
 flowchart TD
     A["System Prompt\n(Bob core, ~1.5k tokens)\nFixed at session start"] --> B
     B["Tool Definitions\n(built-in tools + MCP tool schemas)\nFixed at session start"] --> C
-    C["Rules\nAGENTS.md + .bob/rules-cloud-architect/\nLoaded when task opens"] --> D
+    C["Rules\nAGENTS.md + every file in .bob/rules-cloud-architect/\nAlways loaded for this mode"] --> D
     D["Mode Instructions\ncustom_modes.yaml roleDefinition\n+ customInstructions\nLoaded when mode is selected"] --> E
     E["Skills\n.bob/skills/*/SKILL.md\nLoaded on-demand via use_skill"] --> F
     F["Messages\nYour prompts, replies,\ntool output, file reads\nGrows every turn"]
@@ -130,21 +130,11 @@ flowchart TD
     style F fill:#fef9e8,stroke:#e5a200
 ```
 
-**Key insight:** System prompt, tool definitions, rules, and mode instructions are all fixed overhead — they consume tokens before you send a single message. Keep them lean. Skills are the only layer that is demand-loaded mid-session, which is why this mode uses them for deep reference content rather than loading everything upfront.
+**Key insight:** System prompt, tool definitions, rules, and mode instructions are all fixed overhead — they consume tokens before you send a single message. Bob loads **every** file in `.bob/rules-cloud-architect/` and combines it with the mode's `customInstructions`; a comment in a rules file does not defer loading. Skills are the only layer that is demand-loaded mid-session, which is why deep reference content belongs in skills rather than rules.
 
-### Rule priority (highest → lowest)
+### Rule loading order
 
-Bob combines rules from multiple sources. Workspace rules override global rules; mode-specific rules load before general rules.
-
-```
-1. Global mode rules      ~/.bob/rules-<mode>/    (your personal overrides, all workspaces)
-2. Workspace mode rules   .bob/rules-cloud-architect/   ← this repo
-3. Global general rules   ~/.bob/rules/
-4. Workspace general      .bob/rules/
-5. AGENTS.md              loaded after mode rules, before workspace general rules
-```
-
-This means rules in `.bob/rules-cloud-architect/` take precedence over anything in `.bob/rules/` and will be overridden only by rules you place in your global `~/.bob/rules-cloud-architect/`.
+Per Bob's documentation, rules are combined in this order: global rules (`~/.bob/rules/`), then workspace rules (`.bob/rules/`). Within each level, mode-specific rules (`rules-<mode>/`) load before general rules. `AGENTS.md` loads after mode-specific rules and before general workspace rules. Workspace rules can override global rules. Files within a directory load alphabetically.
 
 ### What belongs where
 
@@ -154,7 +144,7 @@ Use this table to decide where to put new guidance:
 |---|---|---|
 | Define the agent's identity, what it produces, and what it never does | `custom_modes.yaml` → `roleDefinition` | Loaded every session; sets the persona |
 | Give the agent procedural instructions for every session (workflow, hard constraints, dispatch) | `custom_modes.yaml` → `customInstructions` | Loaded every session; governs behavior |
-| Define grounding rules for a specific architecture domain (security, HA, cost, integrations) | `.bob/rules-cloud-architect/NN-name.md` with a `<!-- load when: -->` header | Loaded on-demand only — keeps fixed overhead low |
+| Define a constraint that applies to every task in this mode (security, output format, cost model) | `.bob/rules-cloud-architect/NN-name.md` | Always loaded for this mode — every line costs tokens every session |
 | Record organizational context the agent needs every session (target clouds, approved services, naming conventions) | `AGENTS.md` | Auto-loaded; version-controlled; shared with the team |
 | Give the agent a deep reference for a specialist task (pattern catalog, WAF review checklist) | `.bob/skills/<name>/SKILL.md` | Demand-loaded via `use_skill` — zero cost until needed |
 | Add grounded, live documentation lookup for a cloud provider | `.bob/mcp.json` (MCP server) | Tools are available throughout the session; only schemas count toward fixed overhead |
@@ -167,17 +157,17 @@ Use this table to decide where to put new guidance:
 `roleDefinition` is the agent's identity — who it is, what it specializes in, and what it never does. Keep it to a paragraph. `customInstructions` is procedural — the session start checklist, spec-driven workflow steps, MCP grounding procedure, and hard constraints. Both load every session, so neither should contain reference content (patterns, checklists, service mappings). Move that to a rules file or skill.
 
 #### Rules files vs `AGENTS.md`
-`AGENTS.md` is for context that is always relevant: workflow, team conventions, approved services, open decisions. Rules files are for domain-specific guidance that is only relevant when the agent is doing a specific type of work. A security design rule is useless overhead during a diagram task — put it in `05-security-design.md` with a `<!-- load when: -->` header, not in `AGENTS.md`.
+`AGENTS.md` is for context that applies to every mode in the workspace: workflow, team conventions, approved services, open decisions. Rules files in `.bob/rules-cloud-architect/` apply to every task in this mode. Anything that only some tasks need belongs in a skill, not a rules file.
 
 **Keep `AGENTS.md` short.** It loads on every turn. Every sentence costs tokens throughout the entire session.
 
 #### Rules files vs skills
-Both are on-demand, but they serve different purposes:
+Rules are always loaded; skills load on demand:
 
 | | Rules file | Skill |
 |---|---|---|
-| Format | Markdown with `<!-- load when: -->` header | `SKILL.md` with YAML front matter |
-| How loaded | Agent reads file via `read_file` | `use_skill` tool call |
+| Format | Markdown | `SKILL.md` with YAML front matter |
+| How loaded | Automatically, with the mode, every session | `use_skill` tool call |
 | Best for | Prescriptive constraints, output formats, required fields, mapping tables | Deep reference content, decision trees, pattern catalogs, review checklists |
 | Token cost | Counted in **Rules** category | Counted in **Skills** category |
 | Example in this mode | `05-security-design.md` — required IAM/encryption fields | `well-architected-review` — 5-pillar review questions |
@@ -185,7 +175,7 @@ Both are on-demand, but they serve different purposes:
 #### Hooks
 Hooks run shell commands or HTTP requests at Bob lifecycle events (`PreToolUse`, `PostToolUse`, `SessionStart`, `Stop`, etc.). They operate **outside the agent's context window** — they cannot read or write the conversation, but they can block tool calls, run linters, or post audit events to external systems.
 
-**This mode has no hooks.** The mode's permission groups do not include `execute`, so the agent cannot run shell commands. There is no blast radius that a hook needs to guard against. If you add `execute` to the groups (e.g. to allow `git` commands), add a `PreToolUse` hook to block any shell patterns that could cause harm.
+**This mode has no hooks.** The mode's permission groups do not include `execute`, so the agent cannot run shell commands. That removes shell risk only: the mode still has unrestricted `edit`, plus `mcp`, `subagent`, and `mode`, so file edits and configured MCP tools can still change things. If you add `execute` to the groups (e.g. to allow `git` commands), add a `PreToolUse` hook to block any shell patterns that could cause harm.
 
 Add hooks in `.bob/settings.json`:
 ```json
@@ -224,11 +214,11 @@ A skill is a `SKILL.md` file that Bob loads via `use_skill`. To add one:
 
 ### Edit or add a rules file
 
-Rules files live in `.bob/rules-cloud-architect/`. Each file begins with `<!-- load when: ... -->` — that comment tells the agent when to load it. Edit any file freely.
+Rules files live in `.bob/rules-cloud-architect/`. Bob loads every file there automatically, in alphabetical order, so keep them short and universal. Edit any file freely.
 
-To add a new rules domain (e.g. cost optimization):
-1. Create `.bob/rules-cloud-architect/NN-name.md` with a `<!-- load when: ... -->` header.
-2. Add a matching entry in the dispatch table inside `.bob/custom_modes.yaml` under `customInstructions` so the agent knows when to load it.
+To add a new rule:
+1. Create `.bob/rules-cloud-architect/NN-name.md`. It is loaded automatically; no registration is needed.
+2. If it applies only to some tasks, make it a skill instead.
 
 ### Configure MCP servers
 
@@ -256,8 +246,8 @@ Copy `.bob/mcp.json.example` to `.bob/mcp.json`. The mode has three documentatio
 
 An example spec lives in `specs/001-doc-processing-platform/spec.md`. To start a new architecture engagement:
 1. Copy `specs/TEMPLATE/` to a new folder (e.g. `specs/002-my-platform/`).
-2. Fill in `spec.md` with your business problem, scope, target clouds, integrations, and acceptance criteria. Set `Status: active`.
-3. You only need to author `spec.md`. When you start your session in Bob, the agent will automatically read `spec.md` and draft `plan.md` and `tasks.md` for your review before generating deliverables.
+2. Fill in `spec.md` with your business problem, scope, target clouds, integrations, and acceptance criteria. Review it, then set `Requirements approval` to `approved by <name> on <date> at <revision>`. Or skip this step: describe the system to the agent and it drafts the spec for your approval.
+3. You only need to author or approve `spec.md`. When you start your session in Bob, the agent reads it and drafts `plan.md` and `tasks.md` for your review before generating deliverables.
 
 ## Contributing via git
 
