@@ -209,8 +209,16 @@ if (!NO_AGENTS) {
 
 // 6. Starter spec templates
 if (!NO_TEMPLATES) {
-  for (const [from, to] of [["specs/001-example", "specs/001-example"], ["specs/TEMPLATE", "specs/TEMPLATE"]]) {
-    copy(from, to, { overwrite: FORCE });
+  const specsSrc = join(SRC, "specs");
+  if (existsSync(specsSrc) && statSync(specsSrc).isDirectory()) {
+    const specDirs = readdirSync(specsSrc, { withFileTypes: true })
+      .filter((d) => d.isDirectory() && !d.name.startsWith("."))
+      .map((d) => d.name);
+    for (const specDir of specDirs) {
+      copy(`specs/${specDir}`, `specs/${specDir}`, { overwrite: FORCE });
+    }
+  } else {
+    log("skip   specs/ (no specs directory found in source)");
   }
 } else {
   log("skip   specs/ (--no-templates)");

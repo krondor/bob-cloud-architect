@@ -45,7 +45,7 @@ By default, the installer copies the mode definition, rules, skills, MCP configu
 ## Suggested first prompts
 
 - "Review AGENTS.md and specs/ and tell me what spec is active and what the next task is."
-- "The spec is in specs/001-example/spec.md — start with plan.md."
+- "The spec is in specs/001-doc-processing-platform/spec.md — start with plan.md."
 - "Produce the high-level architecture diagram for the current spec."
 - "Produce the component selection matrix for AWS, Azure, and GCP per the spec."
 
@@ -214,7 +214,7 @@ Copy `.bob/mcp.json.example` to `.bob/mcp.json`. The mode has three documentatio
 
 ### Update the spec template
 
-An example spec lives in `specs/001-example/spec.md`. Copy `specs/TEMPLATE/spec.md` to a new directory (e.g. `specs/my-project/`) and fill it in. The agent reads specs at session start — the active spec drives what it produces.
+An example spec lives in `specs/001-doc-processing-platform/spec.md`. Copy `specs/TEMPLATE/spec.md` to a new directory (e.g. `specs/my-project/`) and fill it in. The agent reads specs at session start — the active spec drives what it produces.
 
 ## Contributing via git
 

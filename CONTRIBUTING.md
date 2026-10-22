@@ -90,7 +90,7 @@ node scripts/install.mjs --dry-run /tmp/test-workspace
 node -e "import('js-yaml').then(m => m.default.load(require('fs').readFileSync('.bob/custom_modes.yaml','utf8')))"
 ```
 
-If you added or modified a rules file, open the mode in Bob against the `specs/001-example/spec.md` example and confirm the agent loads the new file at the expected point in the session.
+If you added or modified a rules file, open the mode in Bob against the `specs/001-doc-processing-platform/spec.md` example and confirm the agent loads the new file at the expected point in the session.
 
 ## Review expectations
 
