@@ -17,5 +17,5 @@ Thumbs.db
 package-lock.json
 
 # Internal POC planning & feat 000 work items
-PLAN.md
+/PLAN.md
 specs/000*

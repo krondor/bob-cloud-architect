@@ -110,11 +110,21 @@ function copy(srcRel, destRel, { overwrite = true } = {}) {
     console.error(`Missing source asset: ${srcRel}`);
     process.exit(1);
   }
+  const stat = statSync(src);
+  if (stat.isDirectory()) {
+    const entries = readdirSync(src, { withFileTypes: true });
+    for (const entry of entries) {
+      if (entry.name.startsWith(".")) continue;
+      copy(join(srcRel, entry.name), join(destRel, entry.name), { overwrite });
+    }
+    return;
+  }
+
   if (!overwrite && existsSync(dest)) {
     return log(`skip   ${destRel} (already exists; use --force to overwrite)`);
   }
   ensureDir(dirname(dest));
-  if (!DRY) cpSync(src, dest, { recursive: true, dereference: true, force: true });
+  if (!DRY) cpSync(src, dest, { dereference: true, force: true });
   installed.push(destRel);
   log(`copy   ${destRel}`);
 }
