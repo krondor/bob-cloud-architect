@@ -7,8 +7,21 @@
   },
   "main": "scripts/install.mjs",
   "type": "module",
+  "engines": {
+    "node": ">=18"
+  },
+  "files": [
+    ".bob",
+    "AGENTS.md",
+    "specs",
+    "scripts"
+  ],
   "scripts": {
-    "install-mode": "node scripts/install.mjs"
+    "install-mode": "node scripts/install.mjs",
+    "test": "node --test test/*.test.mjs"
+  },
+  "dependencies": {
+    "yaml": "^2.9.1"
   },
   "keywords": [
     "bob",

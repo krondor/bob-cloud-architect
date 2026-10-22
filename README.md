@@ -19,18 +19,21 @@ This mode does not generate application code, Terraform, or test suites. For tho
 npx github:krondor/bob-cloud-architect
 ```
 
-Or from a local checkout: `node /path/to/bob-cloud-architect/scripts/install.mjs /path/to/your-project`
+Or from a local checkout: run `npm install` once in the checkout (the installer needs the `yaml` package), then `node /path/to/bob-cloud-architect/scripts/install.mjs /path/to/your-project`.
 
-By default, the installer copies the mode definition, rules, skills, MCP configuration template (`.bob/mcp.json.example`), `AGENTS.md`, starter spec templates (`specs/`), and the mode documentation (`README-cloud-architect.md` — renamed so it does not conflict with the project's own `README.md`).
+By default, the installer copies the mode definition, rules, skills, MCP configuration template (`.bob/mcp.json.example`), `AGENTS.md`, the blank spec template (`specs/TEMPLATE`), and the mode documentation (`README-cloud-architect.md` — renamed so it does not conflict with the project's own `README.md`). It also writes `.bob/cloud-architect.lock.json`, which records a SHA-256 of each installed file. Tests, `package.json`, and repo tooling are never installed into your workspace.
+
+Re-running the installer updates files you have not edited and keeps files you have. Use `--force` to overwrite your edits.
 
 | Option | Effect |
 |---|---|
 | `--dry-run` | Print what would change; write nothing |
-| `--force` | Replace existing `cloud-architect` block and overwrite existing files |
+| `--force` | Overwrite locally modified files and replace the existing `cloud-architect` mode entry |
+| `--with-examples` | Also install example specs (e.g. `specs/001-doc-processing-platform`). Off by default |
 | `--git-exclude` | Add installed paths to `.git/info/exclude` (local-only ignore) |
 | `--no-agents` | Skip copying `AGENTS.md` |
 | `--no-mcp` | Skip copying `.bob/mcp.json.example` |
-| `--no-templates` | Skip copying starter specs (`specs/`) |
+| `--no-templates` | Skip copying spec templates (`specs/`) |
 | `--no-skills` | Skip copying `.bob/skills/` |
 | `--no-rules` | Skip copying `.bob/rules-cloud-architect/` |
 | `--no-mode` | Skip updating `.bob/custom_modes.yaml` |

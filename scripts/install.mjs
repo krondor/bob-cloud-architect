@@ -12,29 +12,35 @@
 //   - Skills (.bob/skills/)
 //   - MCP server config (.bob/mcp.json.example)
 //   - AGENTS.md operating contract
-//   - Starter spec templates (specs/)
+//   - Blank spec template (specs/TEMPLATE)
 //   - Mode guide and customization docs (README-cloud-architect.md)
+//   - Install record (.bob/cloud-architect.lock.json)
 //
 // Options:
 //   --dry-run             Print what would change; write nothing.
-//   --force               Replace an existing cloud-architect block and overwrite template files.
+//   --force               Overwrite locally modified files and replace an existing mode entry.
+//   --with-examples       Also install example specs (specs/NNN-*). Off by default.
 //   --git-exclude         Add installed paths to .git/info/exclude (local-only ignore).
 //   --no-agents           Skip copying AGENTS.md.
 //   --no-mcp              Skip copying .bob/mcp.json.example.
-//   --no-templates        Skip copying starter specs (specs/).
+//   --no-templates        Skip copying spec templates (specs/).
 //   --no-skills           Skip copying .bob/skills/.
 //   --no-rules            Skip copying .bob/rules-cloud-architect/.
 //   --no-mode             Skip updating .bob/custom_modes.yaml.
 //   --no-readme           Skip copying mode documentation (README-cloud-architect.md).
 //   -h, --help            Show help message.
 //
-// Merge rules: custom_modes.yaml is merged (never overwritten unless --force).
-// Existing files (AGENTS.md, mcp.json.example, specs) are preserved unless --force is specified.
+// Upgrade rules: every installed file is recorded with a SHA-256 in
+// .bob/cloud-architect.lock.json. On reinstall a file is replaced only if it is missing,
+// identical to the new version, or still matches the recorded hash (never edited locally).
+// Locally modified files are kept unless --force is given. The mode entry in
+// custom_modes.yaml is matched by slug through a YAML parser and follows the same rule.
 
 import {
   cpSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync, appendFileSync, statSync,
 } from "node:fs";
-import { dirname, join, resolve } from "node:path";
+import { createHash } from "node:crypto";
+import { dirname, join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const SLUG = "cloud-architect";
@@ -48,7 +54,7 @@ if (flags.has("-h") || flags.has("--help")) {
   console.log(`
 Usage:
   npx github:krondor/bob-cloud-architect [target-dir] [options]
-  node scripts/install.mjs [target-dir] [options]
+  node scripts/install.mjs [target-dir] [options]   (run \`npm install\` in the checkout first)
 
 By default, installs:
   - Custom mode definition (.bob/custom_modes.yaml)
@@ -56,16 +62,20 @@ By default, installs:
   - Skills (.bob/skills/)
   - MCP server config (.bob/mcp.json.example)
   - AGENTS.md operating contract
-  - Starter spec templates (specs/)
+  - Blank spec template (specs/TEMPLATE)
   - Mode guide and customization docs (README-cloud-architect.md)
+  - Install record (.bob/cloud-architect.lock.json)
+
+Reinstalling keeps files you have edited and updates files you have not.
 
 Options:
   --dry-run             Print what would change; write nothing.
-  --force               Replace existing mode block and overwrite existing files.
+  --force               Overwrite locally modified files and replace the existing mode entry.
+  --with-examples       Also install example specs (specs/NNN-*). Off by default.
   --git-exclude         Add installed paths to .git/info/exclude (local-only ignore).
   --no-agents           Skip installing AGENTS.md.
   --no-mcp              Skip installing .bob/mcp.json.example.
-  --no-templates        Skip installing starter specs (specs/).
+  --no-templates        Skip installing spec templates (specs/).
   --no-skills           Skip installing skills in .bob/skills/.
   --no-rules            Skip installing mode rules in .bob/rules-cloud-architect/.
   --no-mode             Skip updating .bob/custom_modes.yaml.
@@ -75,8 +85,18 @@ Options:
   process.exit(0);
 }
 
+let YAML;
+try {
+  YAML = await import("yaml");
+} catch {
+  console.error(`Missing dependency "yaml". Run \`npm install\` in ${SRC} first (not needed with npx).`);
+  process.exit(1);
+}
+const { parseDocument, isMap, isSeq } = YAML;
+
 const DRY = flags.has("--dry-run");
 const FORCE = flags.has("--force");
+const WITH_EXAMPLES = flags.has("--with-examples");
 const NO_AGENTS = flags.has("--no-agents") || flags.has("--without-agents");
 const NO_MCP = flags.has("--no-mcp") || flags.has("--without-mcp");
 const NO_TEMPLATES = flags.has("--no-templates") || flags.has("--without-templates");
@@ -99,70 +119,124 @@ if (!existsSync(TARGET) || !statSync(TARGET).isDirectory()) {
 const installed = [];
 const log = (msg) => console.log(`${DRY ? "[dry-run] " : ""}${msg}`);
 
+const sha256 = (data) => createHash("sha256").update(data).digest("hex");
+const posix = (p) => p.split(sep).join("/");
+const canon = (v) =>
+  Array.isArray(v)
+    ? v.map(canon)
+    : v && typeof v === "object"
+      ? Object.fromEntries(Object.keys(v).sort().map((k) => [k, canon(v[k])]))
+      : v;
+const modeHash = (item) => sha256(JSON.stringify(canon(item.toJSON())));
+
+// ── install record ─────────────────────────────────────────────────────────────
+const LOCK_REL = `.bob/${SLUG}.lock.json`;
+const lockPath = join(TARGET, LOCK_REL);
+let prior = { files: {} };
+if (existsSync(lockPath)) {
+  try {
+    prior = JSON.parse(readFileSync(lockPath, "utf8"));
+    prior.files ??= {};
+  } catch {
+    prior = { files: {} };
+  }
+}
+const pkg = JSON.parse(readFileSync(join(SRC, "package.json"), "utf8"));
+const lock = { version: pkg.version, mode: prior.mode, files: { ...prior.files } };
+
 function ensureDir(p) {
   if (!DRY) mkdirSync(p, { recursive: true });
 }
 
-function copy(srcRel, destRel, { overwrite = true } = {}) {
+function copy(srcRel, destRel) {
   const src = join(SRC, srcRel);
   const dest = join(TARGET, destRel);
   if (!existsSync(src)) {
     console.error(`Missing source asset: ${srcRel}`);
     process.exit(1);
   }
-  const stat = statSync(src);
-  if (stat.isDirectory()) {
-    const entries = readdirSync(src, { withFileTypes: true });
-    for (const entry of entries) {
+  if (statSync(src).isDirectory()) {
+    for (const entry of readdirSync(src, { withFileTypes: true })) {
       if (entry.name.startsWith(".")) continue;
-      copy(join(srcRel, entry.name), join(destRel, entry.name), { overwrite });
+      copy(join(srcRel, entry.name), join(destRel, entry.name));
     }
     return;
   }
 
-  if (!overwrite && existsSync(dest)) {
-    return log(`skip   ${destRel} (already exists; use --force to overwrite)`);
+  const key = posix(destRel);
+  const srcHash = sha256(readFileSync(src));
+  const existed = existsSync(dest);
+  if (existed) {
+    const destHash = sha256(readFileSync(dest));
+    if (destHash === srcHash) {
+      lock.files[key] = srcHash;
+      installed.push(destRel);
+      return log(`ok     ${destRel} (up to date)`);
+    }
+    const untouched = prior.files[key] === destHash;
+    if (!FORCE && !untouched) {
+      return log(`skip   ${destRel} (locally modified or not installed by this tool; use --force to overwrite)`);
+    }
   }
   ensureDir(dirname(dest));
   if (!DRY) cpSync(src, dest, { dereference: true, force: true });
+  lock.files[key] = srcHash;
   installed.push(destRel);
-  log(`copy   ${destRel}`);
+  log(`${existed ? "update" : "copy  "} ${destRel}`);
 }
 
 function installModes() {
   const rel = ".bob/custom_modes.yaml";
   const dest = join(TARGET, rel);
   const srcText = readFileSync(join(SRC, rel), "utf8").replace(/\r\n/g, "\n");
-  const srcBlock = srcText.split("\n").slice(1).join("\n").trimEnd();
+  const srcDoc = parseDocument(srcText);
+  const srcItem = srcDoc.get("customModes").items.find((n) => isMap(n) && n.get("slug") === SLUG);
+  const srcHash = modeHash(srcItem);
   installed.push(rel);
 
-  if (!existsSync(dest)) {
+  if (!existsSync(dest) || readFileSync(dest, "utf8").trim() === "") {
     ensureDir(dirname(dest));
     if (!DRY) writeFileSync(dest, srcText);
+    lock.mode = srcHash;
     return log(`create ${rel}`);
   }
 
-  const destText = readFileSync(dest, "utf8").replace(/\r\n/g, "\n");
-  if (/^customModes:\s*(\[\s*\])?\s*$/m.test(destText) && !/^\s+- slug:/m.test(destText)) {
-    if (!DRY) writeFileSync(dest, srcText);
-    return log(`fill   ${rel} (was empty)`);
-  }
-  if (!/^customModes:\s*$/m.test(destText) || !/^ {2}- /m.test(destText) || /^(?!customModes:)\S/m.test(destText)) {
-    console.error(`${rel} has an unexpected layout. Add the mode manually from ${join(SRC, rel)}.`);
+  const destDoc = parseDocument(readFileSync(dest, "utf8"));
+  if (destDoc.errors.length > 0 || !isMap(destDoc.contents)) {
+    console.error(`${rel} is not valid YAML with a top-level mapping. Add the mode manually from ${join(SRC, rel)}.`);
     process.exit(1);
   }
 
-  const start = destText.search(new RegExp(`^ {2}- slug: ${SLUG}\\s*$`, "m"));
-  if (start === -1) {
-    if (!DRY) writeFileSync(dest, `${destText.trimEnd()}\n${srcBlock}\n`);
+  const seq = destDoc.get("customModes");
+  if (!isSeq(seq)) {
+    destDoc.set("customModes", srcDoc.get("customModes"));
+    if (!DRY) writeFileSync(dest, destDoc.toString());
+    lock.mode = srcHash;
+    return log(`fill   ${rel} (customModes was missing)`);
+  }
+
+  const idx = seq.items.findIndex((n) => isMap(n) && n.get("slug") === SLUG);
+  if (idx === -1) {
+    if (seq.items.length === 0) seq.flow = false;
+    seq.items.push(srcItem);
+    if (!DRY) writeFileSync(dest, destDoc.toString());
+    lock.mode = srcHash;
     return log(`append ${rel} (added ${SLUG})`);
   }
-  if (!FORCE) return log(`skip   ${rel} (${SLUG} already present; use --force to replace it)`);
-  const rest = destText.slice(start + 1);
-  const next = rest.search(/^ {2}- /m);
-  const end = next === -1 ? destText.length : start + 1 + next;
-  if (!DRY) writeFileSync(dest, `${destText.slice(0, start)}${srcBlock}\n${destText.slice(end)}`);
-  log(`replace ${rel} (${SLUG} block)`);
+
+  const destHash = modeHash(seq.items[idx]);
+  if (destHash === srcHash) {
+    lock.mode = srcHash;
+    return log(`ok     ${rel} (${SLUG} up to date)`);
+  }
+  const untouched = prior.mode === destHash;
+  if (!FORCE && !untouched) {
+    return log(`skip   ${rel} (${SLUG} locally modified or not installed by this tool; use --force to replace it)`);
+  }
+  seq.items[idx] = srcItem;
+  if (!DRY) writeFileSync(dest, destDoc.toString());
+  lock.mode = srcHash;
+  log(`replace ${rel} (${SLUG} entry)`);
 }
 
 // ── run ────────────────────────────────────────────────────────────────────────
@@ -205,19 +279,19 @@ if (!NO_SKILLS) {
 
 // 4. MCP example config
 if (!NO_MCP) {
-  copy(".bob/mcp.json.example", ".bob/mcp.json.example", { overwrite: FORCE });
+  copy(".bob/mcp.json.example", ".bob/mcp.json.example");
 } else {
   log("skip   .bob/mcp.json.example (--no-mcp)");
 }
 
 // 5. AGENTS.md
 if (!NO_AGENTS) {
-  copy("AGENTS.md", "AGENTS.md", { overwrite: FORCE });
+  copy("AGENTS.md", "AGENTS.md");
 } else {
   log("skip   AGENTS.md (--no-agents)");
 }
 
-// 6. Starter spec templates
+// 6. Spec templates (examples only with --with-examples)
 if (!NO_TEMPLATES) {
   const specsSrc = join(SRC, "specs");
   if (existsSync(specsSrc) && statSync(specsSrc).isDirectory()) {
@@ -225,7 +299,11 @@ if (!NO_TEMPLATES) {
       .filter((d) => d.isDirectory() && !d.name.startsWith("."))
       .map((d) => d.name);
     for (const specDir of specDirs) {
-      copy(`specs/${specDir}`, `specs/${specDir}`, { overwrite: FORCE });
+      if (specDir === "TEMPLATE" || WITH_EXAMPLES) {
+        copy(`specs/${specDir}`, `specs/${specDir}`);
+      } else {
+        log(`skip   specs/${specDir} (example; use --with-examples to install)`);
+      }
     }
   } else {
     log("skip   specs/ (no specs directory found in source)");
@@ -236,12 +314,19 @@ if (!NO_TEMPLATES) {
 
 // 7. Mode documentation & customization guide
 if (!NO_README) {
-  copy("README.md", `README-${SLUG}.md`, { overwrite: FORCE });
+  copy("README.md", `README-${SLUG}.md`);
 } else {
   log(`skip   README-${SLUG}.md (--no-readme)`);
 }
 
-// 8. Local-only Git ignore
+// 8. Install record
+if (!DRY && (lock.mode || Object.keys(lock.files).length > 0)) {
+  mkdirSync(dirname(lockPath), { recursive: true });
+  writeFileSync(lockPath, `${JSON.stringify(lock, null, 2)}\n`);
+}
+installed.push(LOCK_REL);
+
+// 9. Local-only Git ignore
 if (flags.has("--git-exclude")) {
   const gitDir = join(TARGET, ".git");
   if (!existsSync(gitDir) || !statSync(gitDir).isDirectory()) {
@@ -270,6 +355,6 @@ console.log(`\nDone. Next steps in ${TARGET}:`);
 console.log("  1. Reopen the folder in Bob and trust the workspace.");
 console.log("  2. Pick the 'Cloud Architect' mode.");
 console.log(`  3. Review README-${SLUG}.md for mode documentation, usage, and customization.`);
-console.log("  4. Fill in AGENTS.md and specs/ with your architecture requirements.");
+console.log("  4. Fill in AGENTS.md and copy specs/TEMPLATE to specs/NNN-name/ for your architecture requirements.");
 console.log("  5. Optional: configure cloud doc MCP servers in .bob/mcp.json (from .bob/mcp.json.example).");
 if (nodeMajor < 18) console.log("  Warning: Node >= 18 is required to run this installer.");

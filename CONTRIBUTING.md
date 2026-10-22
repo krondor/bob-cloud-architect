@@ -83,12 +83,11 @@ To update a vendored skill, replace the file and update the `skills-lock.json` e
 ## Validation before opening a PR
 
 ```bash
-# Verify the installer runs cleanly against a temp workspace
-node scripts/install.mjs --dry-run /tmp/test-workspace
-
-# Confirm custom_modes.yaml is valid YAML
-node -e "import('js-yaml').then(m => m.default.load(require('fs').readFileSync('.bob/custom_modes.yaml','utf8')))"
+npm install   # first time only; installs the `yaml` dependency used by the installer and tests
+npm test      # installer regression tests, skill/lock version sync, and package contents
 ```
+
+Tests live in `test/` and are repo-only: the `files` allowlist in `package.json` keeps them out of the published package, and the installer never copies them into a client workspace. Add a test in `test/install.test.mjs` for any installer change.
 
 If you added or modified a rules file, open the mode in Bob against the `specs/001-doc-processing-platform/spec.md` example and confirm the agent loads the new file at the expected point in the session.
 
