@@ -86,15 +86,16 @@ out-of-scope with a rationale, not silently omitted.
        ) USING ICEBERG
        PARTITIONED BY (days(ingestion_date), doc_type);
 
-    d. AI prompt specification — `prompts/document_summary_prompt.yaml`:
+    d. AI prompt specification — `prompts/<NNN>-document_summary_prompt.yaml` (e.g. `prompts/001-document_summary_prompt.yaml`):
        prompt_id: document_summary_v1
-       model_fallback_hierarchy:
-         - <primary model id>
-         - <fallback model id>
-       hyperparameters:
-         temperature: 0.2
-         max_output_tokens: 512
-         stop_sequences: ["\n\n"]
+       model_selection:               # per cloud; see 03-enterprise-integrations.md "Model selection boundary"
+         status: open_decision | pinned (cite doc URL + date)
+         criteria: [task_fit, cost, latency, region, provenance]
+         primary: <model id or TBD>
+         fallback: <model id or TBD>
+       hyperparameters:               # provisional, tuned downstream against an eval set
+         temperature: <provisional>
+         max_output_tokens: <provisional>
        prompt_template: |
          Summarize the following document. Focus on key findings and action items.
          Metadata: {{metadata}}
@@ -129,7 +130,7 @@ out-of-scope with a rationale, not silently omitted.
       integration/
       failure_scenarios/
     prompts/
-      document_summary_prompt.yaml
+      <NNN>-document_summary_prompt.yaml
     docs/
     README.md
 
@@ -156,10 +157,10 @@ Prose for explanations. Code blocks for schemas, configs, and directory trees.
 
 ## Output location
 
-`docs/` is shared across all specs, so every file written there MUST be prefixed with the spec number (`<NNN>`, the leading digits of the spec folder, e.g. `001`) to prevent one spec's deliverables overwriting another's. Never write an unprefixed file into `docs/`.
+`docs/` and `prompts/` are shared across all specs, so every file written to either directory MUST be prefixed with the spec number (`<NNN>`, the leading digits of the spec folder, e.g. `001`) to prevent one spec's deliverables overwriting another's. Never write an unprefixed file into `docs/` or `prompts/`. This applies to the file name only; `prompt_id` inside the YAML stays unprefixed.
 
 - Architecture documents: `docs/<NNN>-<artifact-name>.md` (e.g. `docs/001-architecture-overview.md`)
 - Component selection matrix: `docs/<NNN>-component-matrix.md` (canonical hand-off artifact for downstream modes)
-- If a task in `tasks.md` lists an unprefixed `docs/` path, apply the `<NNN>-` prefix anyway and flag the task for correction.
+- If a task or acceptance criterion lists an unprefixed `docs/` or `prompts/` path, apply the `<NNN>-` prefix anyway and flag it for correction.
 - Before writing a deliverable, check that the target path does not already exist for a different spec; never overwrite another spec's file.
-- Prompt specification: `prompts/document_summary_prompt.yaml` (or as a code block in the deliverable)
+- Prompt specification: `prompts/<NNN>-<prompt-name>.yaml` (e.g. `prompts/001-document_summary_prompt.yaml`), or as a code block in the deliverable

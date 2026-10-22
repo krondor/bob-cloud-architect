@@ -155,9 +155,11 @@ Scheduled trigger (every N minutes, configurable)
 
 For every LLM service documented:
 
+**Model selection boundary.** The architect selects the model *class* and the selection criteria, not a pinned model version or tuned parameters. Never pin a model ID from memory — model catalogs and deprecations change faster than this rule file. Either (a) cite the provider's current model/lifecycle docs page and the retrieval date, or (b) record the model as an open decision with owner "ML platform team" and list the criteria (task fit, cost per 1K tokens, latency target, region availability, data-residency/provenance, deprecation date). Hyperparameters in a prompt spec are marked `provisional` and are tuned downstream against an evaluation set.
+
 | Field | Content |
 |---|---|
-| Model identifier | Named model and version (e.g. `amazon.titan-text-premier-v1:0`) |
+| Model identifier | Model class + selection criteria; pinned ID only if the spec supplies one or a current provider doc is cited with date |
 | Context window | Max tokens in; document truncation strategy if exceeded |
 | Call mode | Synchronous or asynchronous / batch |
 | Token budget | Per-invocation limit; per-document cost estimate (rough order of magnitude) |

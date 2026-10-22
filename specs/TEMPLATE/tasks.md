@@ -36,7 +36,7 @@ Produce deliverables one at a time in the order below. Each item corresponds to 
 
 - [ ] **Task 7: Data models and contracts**
   - Scope: CloudEvents JSON Schema, status tracking / reconciliation ledger DDL, prompt specifications.
-  - Deliverable: Schemas and DDL in `docs/NNN-data-contracts.md`.
+  - Deliverable: Schemas and DDL in `docs/NNN-data-contracts.md`; prompt specification in `prompts/NNN-<prompt-name>.yaml` (e.g. `prompts/NNN-document_summary_prompt.yaml`).
 
 - [ ] **Task 8: Recommended folder structure**
   - Scope: Target directory layout for downstream code and IaC generation.

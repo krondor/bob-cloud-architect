@@ -63,6 +63,7 @@ The architecture deliverable is complete when all of the following are satisfied
 - [ ] <!-- e.g. Component selection matrix covers all required capabilities -->
 - [ ] <!-- e.g. All integration targets documented with auth model and failure behavior -->
 - [ ] <!-- e.g. Security design covers IAM, encryption, secrets, audit logging -->
+- [ ] <!-- e.g. AI prompt specification present at `prompts/NNN-<prompt-name>.yaml` (spec-number prefix required) -->
 - [ ] <!-- e.g. Open decisions list populated with owner and target date -->
 
 ---
