@@ -13,6 +13,7 @@
 //   - MCP server config (.bob/mcp.json.example)
 //   - AGENTS.md operating contract
 //   - Starter spec templates (specs/)
+//   - Mode guide and customization docs (README-cloud-architect.md)
 //
 // Options:
 //   --dry-run             Print what would change; write nothing.
@@ -24,6 +25,7 @@
 //   --no-skills           Skip copying .bob/skills/.
 //   --no-rules            Skip copying .bob/rules-cloud-architect/.
 //   --no-mode             Skip updating .bob/custom_modes.yaml.
+//   --no-readme           Skip copying mode documentation (README-cloud-architect.md).
 //   -h, --help            Show help message.
 //
 // Merge rules: custom_modes.yaml is merged (never overwritten unless --force).
@@ -55,6 +57,7 @@ By default, installs:
   - MCP server config (.bob/mcp.json.example)
   - AGENTS.md operating contract
   - Starter spec templates (specs/)
+  - Mode guide and customization docs (README-cloud-architect.md)
 
 Options:
   --dry-run             Print what would change; write nothing.
@@ -66,6 +69,7 @@ Options:
   --no-skills           Skip installing skills in .bob/skills/.
   --no-rules            Skip installing mode rules in .bob/rules-cloud-architect/.
   --no-mode             Skip updating .bob/custom_modes.yaml.
+  --no-readme           Skip copying mode documentation (README-cloud-architect.md).
   -h, --help            Show this help message.
 `);
   process.exit(0);
@@ -79,6 +83,7 @@ const NO_TEMPLATES = flags.has("--no-templates") || flags.has("--without-templat
 const NO_SKILLS = flags.has("--no-skills") || flags.has("--without-skills");
 const NO_RULES = flags.has("--no-rules") || flags.has("--without-rules");
 const NO_MODE = flags.has("--no-mode") || flags.has("--without-mode");
+const NO_README = flags.has("--no-readme") || flags.has("--without-readme");
 
 const TARGET = resolve(positional[0] ?? process.cwd());
 
@@ -211,7 +216,14 @@ if (!NO_TEMPLATES) {
   log("skip   specs/ (--no-templates)");
 }
 
-// 7. Local-only Git ignore
+// 7. Mode documentation & customization guide
+if (!NO_README) {
+  copy("README.md", `README-${SLUG}.md`, { overwrite: FORCE });
+} else {
+  log(`skip   README-${SLUG}.md (--no-readme)`);
+}
+
+// 8. Local-only Git ignore
 if (flags.has("--git-exclude")) {
   const gitDir = join(TARGET, ".git");
   if (!existsSync(gitDir) || !statSync(gitDir).isDirectory()) {
@@ -239,6 +251,7 @@ const nodeMajor = Number(process.versions.node.split(".")[0]);
 console.log(`\nDone. Next steps in ${TARGET}:`);
 console.log("  1. Reopen the folder in Bob and trust the workspace.");
 console.log("  2. Pick the 'Cloud Architect' mode.");
-console.log("  3. Fill in AGENTS.md and specs/ with your architecture requirements.");
-console.log("  4. Optional: configure cloud doc MCP servers in .bob/mcp.json (from .bob/mcp.json.example).");
+console.log(`  3. Review README-${SLUG}.md for mode documentation, usage, and customization.`);
+console.log("  4. Fill in AGENTS.md and specs/ with your architecture requirements.");
+console.log("  5. Optional: configure cloud doc MCP servers in .bob/mcp.json (from .bob/mcp.json.example).");
 if (nodeMajor < 18) console.log("  Warning: Node >= 18 is required to run this installer.");
