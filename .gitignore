@@ -15,3 +15,7 @@ Thumbs.db
 # Editor state — workspace settings are local
 .vscode/settings.json
 package-lock.json
+
+# Internal POC planning & feat 000 work items
+PLAN.md
+specs/000*
