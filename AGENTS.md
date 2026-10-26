@@ -8,7 +8,7 @@ Keep it short, accurate, and reviewed like code. Update it when conventions chan
 
 ## Purpose of this mode
 
-This workspace uses the `cloud-architect` Bob mode to design production-ready, multi-cloud, event-driven architectures. In that mode the agent works from a written spec whose requirements a human has approved, and produces architecture deliverables. The no-implementation restriction applies to the `cloud-architect` mode only; other modes follow their own instructions.
+This workspace uses the `cloud-architect` Bob mode to design production-ready cloud architectures for enterprise environments. The mode handles any engagement type — single-cloud, multi-cloud, event-driven, migrations, data platforms, integration patterns, and more. The agent works from a written spec whose requirements a human has approved, and produces architecture deliverables. The no-implementation restriction applies to the `cloud-architect` mode only; other modes follow their own instructions.
 
 **Workspace layout:**
 
@@ -86,6 +86,7 @@ Load with `use_skill` when the task needs them. See `CONTRIBUTING.md` for how to
 |---|---|---|
 | `cloud-architecture-patterns` | `.bob/skills/cloud-architecture-patterns/SKILL.md` | Pattern selection, event-driven design, CQRS, saga, strangler fig, anti-patterns |
 | `well-architected-review` | `.bob/skills/well-architected-review/SKILL.md` | Reviewing a completed deliverable against the five-pillar WAF before handoff |
+| `document-processing-profile` | `.bob/skills/document-processing-profile/SKILL.md` | Spec declares `profile: document-processing` — adds pipeline patterns, DDL, LLM rules, and review checks |
 
 ---
 
@@ -94,7 +95,7 @@ Load with `use_skill` when the task needs them. See `CONTRIBUTING.md` for how to
 An architecture task is done when:
 
 - [ ] The spec acceptance criteria are mapped to evidence in the deliverable.
-- [ ] All three cloud variants are covered with equal depth (or the spec explicitly limits scope to fewer clouds).
+- [ ] All cloud targets named in the spec are covered with equal depth.
 - [ ] Every integration target has an explicit auth model and data contract documented.
 - [ ] Security design covers IAM, encryption, secrets, and audit logging.
 - [ ] A human has reviewed and approved the deliverable before it moves downstream.

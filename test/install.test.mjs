@@ -210,3 +210,47 @@ test("mode instructions define the spec lifecycle and no longer require one-pass
 function modesFromSource() {
   return parse(readFileSync(join(ROOT, ".bob", "custom_modes.yaml"), "utf8")).customModes;
 }
+
+test("base mode constraints are cloud-agnostic: no unconditional three-cloud parity or PII-before-LLM", () => {
+  const mode = modesFromSource().find((m) => m.slug === SLUG);
+  // Three-cloud parity must be conditional on spec, not an unconditional hard constraint
+  assert.doesNotMatch(mode.customInstructions, /AWS, Azure, and GCP are always equal targets/);
+  assert.doesNotMatch(mode.customInstructions, /always equal targets/i);
+  // PII-before-LLM is a doc-processing profile constraint, not a base mode constraint
+  assert.doesNotMatch(mode.customInstructions, /PII must be sanitized before/i);
+  // Base rules must not mention three-cloud as unconditional
+  const rules = [
+    readFileSync(join(ROOT, ".bob", "rules-cloud-architect", "06-deliverable-format.md"), "utf8"),
+    readFileSync(join(ROOT, ".bob", "rules-cloud-architect", "07-cost-optimization.md"), "utf8"),
+  ];
+  for (const text of rules) {
+    assert.doesNotMatch(text, /Iceberg Parquet.*reconciliation/i, "base rule must not reference doc-processing schemas");
+    assert.doesNotMatch(text, /LLM token cost/i, "LLM token cost rule belongs in doc-processing profile skill");
+  }
+});
+
+test("document-processing-profile skill exists and declares profile constraints", () => {
+  const skillPath = join(ROOT, ".bob", "skills", "document-processing-profile", "SKILL.md");
+  assert.ok(existsSync(skillPath), "document-processing-profile skill must exist");
+  const text = readFileSync(skillPath, "utf8");
+  assert.match(text, /PII must be sanitized before any document content reaches an LLM API/);
+  assert.match(text, /reconciliation_ledger/);
+  assert.match(text, /processed_summaries/);
+  assert.match(text, /Snowflake/);
+});
+
+test("well-architected-review skill has no unconditional [POC] checks", () => {
+  const text = readFileSync(join(ROOT, ".bob", "skills", "well-architected-review", "SKILL.md"), "utf8");
+  assert.doesNotMatch(text, /\[POC\]/);
+  assert.match(text, /document-processing-profile/, "WAR skill must reference the profile skill for additional checks");
+});
+
+test("spec template includes profile field", () => {
+  const text = readFileSync(join(ROOT, "specs", "TEMPLATE", "spec.md"), "utf8");
+  assert.match(text, /\*\*Profile:\*\*/);
+});
+
+test("example spec declares document-processing profile", () => {
+  const text = readFileSync(join(ROOT, "specs", "001-doc-processing-platform", "spec.md"), "utf8");
+  assert.match(text, /\*\*Profile:\*\* document-processing/);
+});

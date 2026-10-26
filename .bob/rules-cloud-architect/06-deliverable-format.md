@@ -16,16 +16,16 @@ every section is either present somewhere in the package or noted as out-of-scop
 
 2. High-Level Architecture
    - Cloud-agnostic component diagram (Mermaid flowchart, L1 + L2)
-   - Processing sequence (Mermaid sequenceDiagram)
+   - Processing sequence (Mermaid sequenceDiagram) — when the spec involves a non-trivial flow
 
 3. Cloud-Specific Architecture
-   - AWS variant (Mermaid flowchart with AWS service names)
-   - Azure variant (Mermaid flowchart with Azure service names)
-   - GCP variant (Mermaid flowchart with GCP service names)
+   - One Mermaid flowchart per target cloud named in the spec, with cloud service names
+   - Omit clouds not in scope; note which clouds are excluded and why
 
 4. Component Selection Matrix
-   Table: Capability | AWS | Azure | GCP | Rationale | Cost Model
+   Table: Capability | <Cloud A> | <Cloud B> | <Cloud C> | Rationale | Cost Model
    *** Cost Model column is MANDATORY — never omit ***
+   Include only the clouds named in the spec.
 
 5. Enterprise Integration Architecture
    - One subsection per integration target in the spec
@@ -33,13 +33,13 @@ every section is either present somewhere in the package or noted as out-of-scop
 
 6. Failure Handling Design
    - Retry strategy: max attempts, backoff algorithm (exponential + jitter), jitter range
-   - DLQ design: routing, alert threshold (depth and age), reprocessing trigger
+   - Dead-letter design: routing, alert threshold (depth and age), reprocessing trigger
    - Recovery runbook pointer
 
 7. High Availability and Disaster Recovery
    - RPO/RTO targets (open decisions if not in spec)
    - HA pattern with rationale
-   - Multi-region topology diagram (Mermaid)
+   - Multi-region topology diagram (Mermaid) — when multi-region is in scope
    - Data residency mapping
    - Failover runbook pointer
    Omit only if spec explicitly excludes HA/DR; state rationale.
@@ -49,92 +49,22 @@ every section is either present somewhere in the package or noted as out-of-scop
    - Encryption table (at rest: KMS CMK; in transit: TLS 1.3)
    - Secrets management plan (naming convention, rotation interval, rotation mechanism)
    - Audit logging design (log fields, retention policy, immutability)
-   - PII sanitization point (where PII is scanned and masked before LLM invocation)
+   - Data governance: classification, residency, and any handling constraints stated in the spec
 
 9. Data Model
-   - Document status state machine (Mermaid stateDiagram-v2)
-   - Status tracking / reconciliation ledger DDL (SQL)
-   - Output schemas for integration targets (Parquet/Iceberg DDL or JSON Schema)
+   - State machine for any entity that has a lifecycle (Mermaid stateDiagram-v2)
+   - Schema or DDL for any persistent store introduced by the architecture
+   - Output schemas for integration targets (format defined by spec: JSON Schema, Avro, Parquet, etc.)
 
 10. Downstream Handoff Contracts
-    a. Ingestion event schema — CloudEvents format, JSON Schema:
-       {
-         "specversion": "1.0",
-         "type": "com.enterprise.doc.ingested",
-         "source": "<storage-uri>",
-         "id": "<correlation_id>",
-         "datacontenttype": "application/json",
-         "data": {
-           "doc_id": "<uuid>",
-           "sha256_checksum": "<hex>",
-           "storage_uri": "<s3|blob|gcs uri>",
-           "doc_type": "<string>",
-           "ingestion_ts": "<ISO-8601>"
-         }
-       }
-
-    b. Reconciliation ledger DDL — see 03-enterprise-integrations.md for full schema
-
-    c. Processed summary output schema (Iceberg DDL):
-       CREATE TABLE processed_summaries (
-         doc_id          STRING        NOT NULL,
-         batch_id        STRING,
-         summary_text    STRING        NOT NULL,
-         model_id        STRING        NOT NULL,
-         prompt_version  STRING        NOT NULL,
-         ingestion_date  DATE          NOT NULL,   -- hidden partition column
-         doc_type        STRING        NOT NULL,   -- hidden partition column
-         processed_ts    TIMESTAMP     NOT NULL
-       ) USING ICEBERG
-       PARTITIONED BY (days(ingestion_date), doc_type);
-
-    d. AI prompt specification — `prompts/<NNN>-document_summary_prompt.yaml` (e.g. `prompts/001-document_summary_prompt.yaml`):
-       prompt_id: document_summary_v1
-       model_selection:               # per cloud; see 03-enterprise-integrations.md "Model selection boundary"
-         status: open_decision | pinned (cite doc URL + date)
-         criteria: [task_fit, cost, latency, region, provenance]
-         primary: <model id or TBD>
-         fallback: <model id or TBD>
-       hyperparameters:               # provisional, tuned downstream against an eval set
-         temperature: <provisional>
-         max_output_tokens: <provisional>
-       prompt_template: |
-         Summarize the following document. Focus on key findings and action items.
-         Metadata: {{metadata}}
-         Document text: {{document_text}}
-       variable_injection:
-         - name: document_text
-           source: validated_document_body
-           max_chars: 8000
-           truncation_strategy: tail
-         - name: metadata
-           source: reconciliation_ledger
-           fields: [doc_id, doc_type, ingestion_ts]
+    - Event or message schema for every async boundary (format: CloudEvents, Avro, JSON Schema, etc.)
+    - API contract summary for every synchronous boundary
+    - Data contract for every integration target (fields, types, versioning strategy)
 
 11. Target Project Folder Structure
-    src/
-      ingestion/
-      validation/
-      batching/
-      llm_engine/
-      adapters/
-        snowflake/
-        databricks/
-        iceberg/
-        ccl/
-      reconciliation/
-    terraform/
-      aws/
-      azure/
-      gcp/
-    tests/
-      unit/
-      integration/
-      failure_scenarios/
-    prompts/
-      <NNN>-document_summary_prompt.yaml
-    docs/
-    README.md
+    - Top-level layout matching the architecture components
+    - One entry per deployable unit or major module
+    - Adapt to the spec's technology choices; do not impose a fixed folder tree
 
 12. Implementation Plan
     - Ordered phases with dependencies
@@ -159,10 +89,9 @@ Prose for explanations. Code blocks for schemas, configs, and directory trees.
 
 ## Output location
 
-`docs/` and `prompts/` are shared across all specs, so every file written to either directory MUST be prefixed with the spec number (`<NNN>`, the leading digits of the spec folder, e.g. `001`) to prevent one spec's deliverables overwriting another's. Never write an unprefixed file into `docs/` or `prompts/`. This applies to the file name only; `prompt_id` inside the YAML stays unprefixed.
+`docs/` and `prompts/` are shared across all specs, so every file written to either directory MUST be prefixed with the spec number (`<NNN>`, the leading digits of the spec folder, e.g. `001`) to prevent one spec's deliverables overwriting another's. Never write an unprefixed file into `docs/` or `prompts/`. This applies to the file name only.
 
 - Architecture documents: `docs/<NNN>-<artifact-name>.md` (e.g. `docs/001-architecture-overview.md`)
 - Component selection matrix: `docs/<NNN>-component-matrix.md` (canonical hand-off artifact for downstream modes)
 - If a task or acceptance criterion lists an unprefixed `docs/` or `prompts/` path, apply the `<NNN>-` prefix anyway and flag it for correction.
 - Before writing a deliverable, check that the target path does not already exist for a different spec; never overwrite another spec's file.
-- Prompt specification: `prompts/<NNN>-<prompt-name>.yaml` (e.g. `prompts/001-document_summary_prompt.yaml`), or as a code block in the deliverable

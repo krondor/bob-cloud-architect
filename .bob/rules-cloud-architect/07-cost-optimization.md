@@ -58,21 +58,7 @@ include a data transfer cost note. Flag as open decision if volumes are unknown.
 | Archive / Glacier / Coldline | Compliance retention; rarely or never accessed |
 | Intelligent-tiering / Lifecycle | Unknown/variable access patterns |
 
-Always specify storage tier and lifecycle policy for compliance-retained data (Iceberg Parquet, reconciliation ledger backups).
-
----
-
-## LLM token cost note
-
-Every LLM integration must include an assumption-labelled token cost range:
-- Input tokens per document (estimate based on average document size)
-- Output tokens per summary
-- Cloud LLM cost: price per 1M tokens × estimated volume = monthly cost range
-- Snowflake Cortex cost: Snowflake credits per token (reference current Cortex credit table)
-
-State every assumption (volume, document size, unit price with source and date). Give a range,
-never a single-point or invoice-grade figure, and label it as an estimate.
-When the spec requires a firm dollar figure, record it as an open decision requiring a FinOps review.
+Always specify storage tier and lifecycle policy for compliance-retained data.
 
 ---
 

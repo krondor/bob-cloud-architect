@@ -14,10 +14,10 @@ Use the table below to select the primary pattern; record the rationale as an AD
 | **Transactional outbox** | Guaranteed event publication on DB write; no 2PC | DB cannot support outbox table or CDC |
 | **CQRS** | Asymmetric read/write loads; multiple read representations | Simple CRUD; team lacks eventual-consistency experience |
 | **Event sourcing** | Full audit trail required; temporal queries needed | Simple CRUD; GDPR right-to-erasure without crypto-shredding |
-| **Serverless batch aggregator** | Micro-batching before LLM invocation; bursty document arrivals | Low-latency per-document requirement (< 5 s end-to-end) |
+| **Batch aggregator** | Micro-batching before expensive downstream call; bursty arrivals | Low-latency per-item requirement (< 5 s end-to-end) |
 | **Strangler fig** | Incremental legacy migration; clear routing seams | Greenfield; no routing seam; short migration window |
 | **Bulkhead** | Different criticality / SLA across processing paths | All paths have equal criticality; isolation adds cost without benefit |
-| **Circuit breaker** | Slow/intermittent downstream (Snowflake, Databricks, LLM) | Always-fast synchronous downstream; no fallback exists |
+| **Circuit breaker** | Slow/intermittent downstream service | Always-fast synchronous downstream; no fallback exists |
 
 ## Service selection rules
 

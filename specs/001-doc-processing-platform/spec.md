@@ -4,6 +4,7 @@
 **Mode:** cloud-architect
 **Status:** in-progress
 **Requirements approval:** pending <!-- example spec: a human sets this to "approved by <name> on <date> at <revision>" before running the mode -->
+**Profile:** document-processing
 **Created:** 2025-01-27
 **Author:** enterprise-poc-team
 
