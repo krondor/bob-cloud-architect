@@ -19,8 +19,8 @@ The no-implementation restriction applies to the `cloud-architect` mode only; ot
 
 ```
 specs/          Spec-driven work: spec.md, plan.md, tasks.md, checkpoint.md per feature or system
-docs/           Architecture outputs produced by the agent (diagrams, decisions, models).
-                Shared across specs: every file MUST be prefixed with the spec number, e.g. docs/001-component-matrix.md
+docs/<spec-id>/ Architecture outputs produced by the agent (diagrams, decisions, models, evidence register).
+                One folder per spec, named after the spec folder, e.g. docs/001-doc-processing-platform/component-matrix.md
 .bob/           Bob config: custom modes, rules, MCP example
 ```
 
@@ -94,7 +94,7 @@ Load with `use_skill` when the task needs them. See `CONTRIBUTING.md` for how to
 
 | Skill | Location | When to use |
 |---|---|---|
-| `cloud-architecture-patterns` | `.bob/skills/cloud-architecture-patterns/SKILL.md` | Pattern selection, event-driven design, CQRS, saga, strangler fig, anti-patterns |
+| `cloud-architecture-patterns` | `.bob/skills/cloud-architecture-patterns/SKILL.md` | Pattern selection, anti-patterns, cloud service mappings, integration patterns, HA/DR and cost reference |
 | `well-architected-review` | `.bob/skills/well-architected-review/SKILL.md` | Reviewing a completed deliverable against the five-pillar WAF before handoff |
 | `document-processing-profile` | `.bob/skills/document-processing-profile/SKILL.md` | Spec declares `profile: document-processing` — adds pipeline patterns, DDL, LLM rules, and review checks |
 

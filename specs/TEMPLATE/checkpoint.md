@@ -10,7 +10,7 @@
 
 | Task | Deliverable | Location | Status |
 |---|---|---|---|
-| <!-- e.g. 1 --> | <!-- e.g. High-level architecture diagram --> | <!-- e.g. docs/001-architecture-overview.md --> | <!-- done / in-review --> |
+| <!-- e.g. 1 --> | <!-- e.g. High-level architecture diagram --> | <!-- e.g. docs/001-doc-processing-platform/architecture-overview.md --> | <!-- done / in-review --> |
 
 ---
 
@@ -33,4 +33,4 @@
 ## Next action
 
 <!-- One sentence: the next task to execute and what it produces. -->
-<!-- e.g. "Execute task 2: produce the component selection matrix (docs/001-component-matrix.md)." -->
+<!-- e.g. "Execute task 2: produce the component selection matrix (docs/001-doc-processing-platform/component-matrix.md)." -->

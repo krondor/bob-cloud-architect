@@ -89,9 +89,24 @@ Prose for explanations. Code blocks for schemas, configs, and directory trees.
 
 ## Output location
 
-`docs/` and `prompts/` are shared across all specs, so every file written to either directory MUST be prefixed with the spec number (`<NNN>`, the leading digits of the spec folder, e.g. `001`) to prevent one spec's deliverables overwriting another's. Never write an unprefixed file into `docs/` or `prompts/`. This applies to the file name only.
+Each spec writes only inside its own folder, `docs/<spec-id>/`, where `<spec-id>` is the spec's
+folder name under `specs/` (e.g. `docs/001-doc-processing-platform/`). Never write a file directly
+into `docs/` or into another spec's folder.
 
-- Architecture documents: `docs/<NNN>-<artifact-name>.md` (e.g. `docs/001-architecture-overview.md`)
-- Component selection matrix: `docs/<NNN>-component-matrix.md` (canonical hand-off artifact for downstream modes)
-- If a task or acceptance criterion lists an unprefixed `docs/` or `prompts/` path, apply the `<NNN>-` prefix anyway and flag it for correction.
-- Before writing a deliverable, check that the target path does not already exist for a different spec; never overwrite another spec's file.
+- Architecture documents: `docs/<spec-id>/<artifact-name>.md` (e.g. `docs/001-doc-processing-platform/architecture-overview.md`)
+- Component selection matrix: `docs/<spec-id>/component-matrix.md` (canonical hand-off artifact for downstream modes)
+- Evidence register: `docs/<spec-id>/evidence-register.md` (see below)
+- If a task or acceptance criterion lists a path outside `docs/<spec-id>/`, write to `docs/<spec-id>/` anyway and flag the task for correction.
+
+## Evidence register
+
+Keep one compact table per spec at `docs/<spec-id>/evidence-register.md`. Add a row when a
+decision depends on a fact about a service, quota, price, region, or compliance rule. Verify
+decision-critical facts once, then reuse the row instead of re-checking.
+
+| Claim | Applies to | Source and date | Status | Decisions that depend on it |
+|---|---|---|---|---|
+| <!-- e.g. Service X is GA in region Y --> | <!-- cloud/service --> | <!-- doc URL, YYYY-MM-DD --> | verified / unverified / stale | <!-- ADR or section --> |
+
+Mark a claim `unverified` when no documentation source was reachable. Never record a claim as
+verified without a source.

@@ -55,7 +55,7 @@ Tasks must be executed in order. Each is one reviewable output. Mark `[x]` on hu
   - CloudEvents ingestion event JSON Schema
   - Status & reconciliation ledger DDL
   - Processed summary output Parquet/Iceberg DDL
-  - AI prompt specification (`prompts/001-document_summary_prompt.yaml` with variable injection, hyperparameters, fallback hierarchy)
+  - AI prompt specification (`docs/001-doc-processing-platform/document_summary_prompt.yaml` with variable injection, hyperparameters, fallback hierarchy)
   - Canonical project folder tree
   - Acceptance: spec rows 12–16 satisfied
 

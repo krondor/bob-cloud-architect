@@ -97,7 +97,7 @@ flowchart TD
     CheckPlan -- "Yes" --> CheckTasks{"tasks.md exists?"}
     DraftPlan --> CheckTasks
     CheckTasks -- "No" --> DeriveTasks["Agent: Derives tasks.md checklist"]
-    CheckTasks -- "Yes" --> Exec["Agent: Executes tasks.md one task at a time\nProduces diagrams, matrices, schemas in docs/"]
+    CheckTasks -- "Yes" --> Exec["Agent: Executes tasks.md one task at a time\nProduces diagrams, matrices, schemas in docs/<spec-id>/"]
     Exec --> Verify["Agent: Verifies all Acceptance Criteria\nMaps evidence in deliverables to spec"]
 ```
 

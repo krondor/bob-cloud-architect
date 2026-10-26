@@ -332,3 +332,54 @@ test("mode workflow references checkpoint.md for session resumption", () => {
   assert.match(mode.customInstructions, /checkpoint\.md/,
     "cloud-architect customInstructions must reference checkpoint.md");
 });
+
+// ---- Phase 5: reduced mandatory context ----
+
+const rulesDir = join(ROOT, ".bob", "rules-cloud-architect");
+const readRule = (f) => readFileSync(join(rulesDir, f), "utf8");
+
+test("always-loaded rules carry no provider service tables (moved to the patterns skill)", () => {
+  for (const f of readdirSync(rulesDir)) {
+    const text = readRule(f);
+    assert.doesNotMatch(text, /\|\s*Capability\s*\|\s*AWS\s*\|/, `${f} has a provider service table`);
+    assert.doesNotMatch(text, /\|\s*Cloud\s*\|\s*Upload/, `${f} has an integration mapping table`);
+  }
+});
+
+test("always-loaded rules stay within the size ceiling", () => {
+  const rules = readdirSync(rulesDir).reduce((n, f) => n + readRule(f).length, 0);
+  const ceiling = 23000; // chars across .bob/rules-cloud-architect; ratchet down in later phases
+  assert.ok(rules <= ceiling, `rules are ${rules} chars, ceiling ${ceiling}`);
+});
+
+test("patterns skill holds the moved reference sections and a navigation entry point", () => {
+  const text = readFileSync(join(ROOT, ".bob", "skills", "cloud-architecture-patterns", "SKILL.md"), "utf8");
+  for (const h of ["## Skill navigation", "## Cloud service reference", "## Integration pattern mappings", "## HA/DR reference", "## Cost reference"]) {
+    assert.ok(text.includes(h), `missing ${h}`);
+  }
+});
+
+test("pattern catalog no longer contradicts itself on choreography and sagas (F14)", () => {
+  const std = readRule("04-architecture-standards.md");
+  assert.doesNotMatch(std, /Compensating transactions required; flow > 4–5 steps/);
+  const skill = readFileSync(join(ROOT, ".bob", "skills", "cloud-architecture-patterns", "SKILL.md"), "utf8");
+  assert.match(skill, /simple application/i, "decision tree needs a simple-application branch");
+  assert.doesNotMatch(skill, /Is strict ordering required across all events\?/);
+});
+
+test("significant recommendations require the four justification questions", () => {
+  const std = readRule("04-architecture-standards.md");
+  for (const k of ["Forcing requirement", "Simpler alternative", "Operational burden", "Evidence that would change"]) {
+    assert.ok(std.includes(k), `missing "${k}"`);
+  }
+});
+
+test("artifacts live under docs/<spec-id>/ with an evidence register (F15)", () => {
+  const fmt = readRule("06-deliverable-format.md");
+  assert.match(fmt, /docs\/<spec-id>\//);
+  assert.match(fmt, /evidence-register\.md/);
+  assert.doesNotMatch(fmt, /prefixed with the spec number/);
+  const mode = modesFromSource().find((m) => m.slug === SLUG);
+  assert.match(mode.customInstructions, /docs\/<spec-id>\//);
+  assert.match(mode.customInstructions, /evidence-register\.md/);
+});

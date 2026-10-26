@@ -1,6 +1,6 @@
 ---
 name: document-processing-profile
-version: 1.0.0
+version: 1.0.1
 description: >
   Architecture profile for enterprise document-processing pipelines: ingest, validate, batch,
   LLM summarisation, and lakehouse output (Snowflake, Databricks, Apache Iceberg). Adds
@@ -239,7 +239,7 @@ PARTITIONED BY (days(ingestion_date), doc_type);
 
 ### AI prompt specification
 
-Store at `prompts/<NNN>-document_summary_prompt.yaml` (e.g. `prompts/001-document_summary_prompt.yaml`):
+Store at `docs/<spec-id>/document_summary_prompt.yaml` (e.g. `docs/001-doc-processing-platform/document_summary_prompt.yaml`):
 
 ```yaml
 prompt_id: document_summary_v1
@@ -290,7 +290,7 @@ tests/
   integration/
   failure_scenarios/
 prompts/
-  <NNN>-document_summary_prompt.yaml
+  document_summary_prompt.yaml
 docs/
 README.md
 ```
