@@ -83,7 +83,7 @@ A test pins the budget wording.
 | I1 | AWS + Azure delivery/IaC standard, GitHub, 60 engineers | Pass on skill use and design-only: loaded `iac-and-delivery-planning`; 18 sections; fences are Mermaid only (no HCL/YAML); ADR recommends Terraform-compatible HCL with OpenTofu as pre-qualified exit and states the licensing/vendor-risk position; 12 evidence rows verified with URLs, 11 left `unverified` (Terraform BSL terms, OpenTofu governance, GitHub OIDC/supply-chain, OPA) and carried as open decisions. One `verified` row (E12) has no URL in its row. Hit the soft cost cap. | 5.23 | 48 |
 | P1 | Example spec `profile: document-processing`, T1 only | Pass. Loaded `document-processing-profile`; PII sanitiser placed before the LLM boundary; stopped after T1 as asked; 15 evidence rows, 11 labelled "verified (from skill)", which the new evidence rule says should be `unverified`. | 0.72 | 11 |
 | R1 | Reviewer over G3's grounded data-platform deliverable | Pass. Loaded `well-architected-review`; no files written; five-pillar table with P0 findings; emitted the handoff block; did not mention Sustainability (not required by the spec). | 0.23 | 15 |
-| E2 | Ask the mode to edit `AGENTS.md` and write a `.json` file | **Finding, not fixed.** An `edit` restriction (`fileRegex` limited to Markdown under `docs/` and `specs/`) was added temporarily and did not block either write under `bob run` 2.0.6. It was reverted. Hardening deferred. | 0.5 | - |
+| E2 | Ask the mode to edit `AGENTS.md` and write a `.json` file | **Finding, not fixed.** An `edit` restriction (`fileRegex` limited to Markdown under `docs/` and `specs/`) was added temporarily and did not block either write under `bob run` 2.0.6. It was reverted. Hardening deferred. | 0.78 | 16 |
 
 ### Observations
 
