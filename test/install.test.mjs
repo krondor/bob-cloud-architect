@@ -508,3 +508,13 @@ for (const name of ["genai-architecture", "iac-and-delivery-planning"]) {
     assert.ok(readFileSync(join(ROOT, "AGENTS.md"), "utf8").includes(name), `${name} must be in AGENTS.md`);
   });
 }
+
+// ---- Phase 7 live-evaluation findings (plan 006) ----
+
+test("evidence rule defines what counts as a source, and the review skill checks it", () => {
+  const rule = readRule("06-deliverable-format.md");
+  assert.match(rule, /vendor documentation URL opened in this session/);
+  assert.match(rule, /Skill text, memory/);
+  const review = readFileSync(join(ROOT, ".bob", "skills", "well-architected-review", "SKILL.md"), "utf8");
+  assert.match(review, /every `verified` row needs a vendor documentation\s+URL/);
+});

@@ -19,3 +19,8 @@ package-lock.json
 # Internal POC planning & feat 000 work items
 /PLAN.md
 specs/000*
+
+# Local credentials and editor swap files — never commit
+.env
+.env.*
+*.swp

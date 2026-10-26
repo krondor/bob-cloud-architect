@@ -102,5 +102,6 @@ decision-critical facts once, then reuse the row instead of re-checking.
 |---|---|---|---|---|
 | <!-- e.g. Service X is GA in region Y --> | <!-- cloud/service --> | <!-- doc URL, YYYY-MM-DD --> | verified / unverified / stale | <!-- ADR or section --> |
 
-Mark a claim `unverified` when no documentation source was reachable. Never record a claim as
-verified without a source.
+`verified` requires a vendor documentation URL opened in this session (doc tool or fetch) and its
+date. Skill text, memory, and "standard documentation" are not sources: record those claims as
+`unverified` and say so in the summary, even when the user asked for verification.
