@@ -1,14 +1,14 @@
 #!/usr/bin/env node
-// install.mjs — installs the cloud-architect Bob mode and its assets into a target
+// install.mjs — installs cloud architect Bob modes and their assets into a target
 // workspace's .bob/ folder, without cloning this repo into that workspace.
 //
 // Usage (from the target workspace):
 //   npx github:krondor/bob-cloud-architect [target-dir] [options]
 //   node /path/to/bob-cloud-architect/scripts/install.mjs [target-dir] [options]
 //
-// By default, installs:
-//   - Custom mode definition (.bob/custom_modes.yaml)
-//   - Mode rules (.bob/rules-cloud-architect/)
+// By default, installs all modes:
+//   - Custom mode definitions (.bob/custom_modes.yaml) — cloud-architect + architecture-reviewer
+//   - Mode rules (.bob/rules-cloud-architect/, .bob/rules-architecture-reviewer/)
 //   - Skills (.bob/skills/)
 //   - MCP server config (.bob/mcp.json.example)
 //   - AGENTS.md operating contract
@@ -17,15 +17,17 @@
 //   - Install record (.bob/cloud-architect.lock.json)
 //
 // Options:
+//   --modes a,b           Install only the named mode slugs (comma-separated).
+//                         Default: cloud-architect,architecture-reviewer
 //   --dry-run             Print what would change; write nothing.
-//   --force               Overwrite locally modified files and replace an existing mode entry.
+//   --force               Overwrite locally modified files and replace existing mode entries.
 //   --with-examples       Also install example specs (specs/NNN-*). Off by default.
 //   --git-exclude         Add installed paths to .git/info/exclude (local-only ignore).
 //   --no-agents           Skip copying AGENTS.md.
 //   --no-mcp              Skip copying .bob/mcp.json.example.
 //   --no-templates        Skip copying spec templates (specs/).
 //   --no-skills           Skip copying .bob/skills/.
-//   --no-rules            Skip copying .bob/rules-cloud-architect/.
+//   --no-rules            Skip copying .bob/rules-*/ directories.
 //   --no-mode             Skip updating .bob/custom_modes.yaml.
 //   --no-readme           Skip copying mode documentation (README-cloud-architect.md).
 //   -h, --help            Show help message.
@@ -33,8 +35,8 @@
 // Upgrade rules: every installed file is recorded with a SHA-256 in
 // .bob/cloud-architect.lock.json. On reinstall a file is replaced only if it is missing,
 // identical to the new version, or still matches the recorded hash (never edited locally).
-// Locally modified files are kept unless --force is given. The mode entry in
-// custom_modes.yaml is matched by slug through a YAML parser and follows the same rule.
+// Locally modified files are kept unless --force is given. Mode entries in
+// custom_modes.yaml are matched by slug through a YAML parser and follow the same rule.
 
 import {
   cpSync, existsSync, mkdirSync, readdirSync, readFileSync, writeFileSync, appendFileSync, statSync,
@@ -43,12 +45,34 @@ import { createHash } from "node:crypto";
 import { dirname, join, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 
-const SLUG = "cloud-architect";
+// All mode slugs shipped by this package (in installation order)
+const ALL_SLUGS = ["cloud-architect", "architecture-reviewer"];
+const PRIMARY_SLUG = "cloud-architect";
 const SRC = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
 const args = process.argv.slice(2);
-const flags = new Set(args.filter((a) => a.startsWith("-")));
+const flags = new Set(args.filter((a) => a.startsWith("-") && !a.startsWith("--modes=")));
 const positional = args.filter((a) => !a.startsWith("-"));
+
+// Parse --modes flag (accepts --modes=a,b or --modes a,b)
+let slugsArg = args.find((a) => a.startsWith("--modes="));
+if (!slugsArg) {
+  const modesIdx = args.indexOf("--modes");
+  if (modesIdx !== -1 && args[modesIdx + 1] && !args[modesIdx + 1].startsWith("-")) {
+    slugsArg = `--modes=${args[modesIdx + 1]}`;
+  }
+}
+const SLUGS = slugsArg
+  ? slugsArg.replace("--modes=", "").split(",").map((s) => s.trim()).filter(Boolean)
+  : ALL_SLUGS;
+
+// Validate requested slugs
+for (const s of SLUGS) {
+  if (!ALL_SLUGS.includes(s)) {
+    console.error(`Unknown mode slug: "${s}". Available: ${ALL_SLUGS.join(", ")}`);
+    process.exit(1);
+  }
+}
 
 if (flags.has("-h") || flags.has("--help")) {
   console.log(`
@@ -56,28 +80,19 @@ Usage:
   npx github:krondor/bob-cloud-architect [target-dir] [options]
   node scripts/install.mjs [target-dir] [options]   (run \`npm install\` in the checkout first)
 
-By default, installs:
-  - Custom mode definition (.bob/custom_modes.yaml)
-  - Mode rules (.bob/rules-cloud-architect/)
-  - Skills (.bob/skills/)
-  - MCP server config (.bob/mcp.json.example)
-  - AGENTS.md operating contract
-  - Blank spec template (specs/TEMPLATE)
-  - Mode guide and customization docs (README-cloud-architect.md)
-  - Install record (.bob/cloud-architect.lock.json)
-
-Reinstalling keeps files you have edited and updates files you have not.
+By default, installs all modes: ${ALL_SLUGS.join(", ")}
 
 Options:
+  --modes a,b           Install only the named mode slugs (comma-separated).
   --dry-run             Print what would change; write nothing.
-  --force               Overwrite locally modified files and replace the existing mode entry.
+  --force               Overwrite locally modified files and replace existing mode entries.
   --with-examples       Also install example specs (specs/NNN-*). Off by default.
   --git-exclude         Add installed paths to .git/info/exclude (local-only ignore).
   --no-agents           Skip installing AGENTS.md.
   --no-mcp              Skip installing .bob/mcp.json.example.
   --no-templates        Skip installing spec templates (specs/).
   --no-skills           Skip installing skills in .bob/skills/.
-  --no-rules            Skip installing mode rules in .bob/rules-cloud-architect/.
+  --no-rules            Skip installing mode rules in .bob/rules-*/.
   --no-mode             Skip updating .bob/custom_modes.yaml.
   --no-readme           Skip copying mode documentation (README-cloud-architect.md).
   -h, --help            Show this help message.
@@ -130,19 +145,24 @@ const canon = (v) =>
 const modeHash = (item) => sha256(JSON.stringify(canon(item.toJSON())));
 
 // ── install record ─────────────────────────────────────────────────────────────
-const LOCK_REL = `.bob/${SLUG}.lock.json`;
+const LOCK_REL = `.bob/${PRIMARY_SLUG}.lock.json`;
 const lockPath = join(TARGET, LOCK_REL);
-let prior = { files: {} };
+let prior = { files: {}, modes: {} };
 if (existsSync(lockPath)) {
   try {
-    prior = JSON.parse(readFileSync(lockPath, "utf8"));
-    prior.files ??= {};
+    const raw = JSON.parse(readFileSync(lockPath, "utf8"));
+    prior.files = raw.files ?? {};
+    // Migrate legacy single `mode` field to `modes` map
+    prior.modes = raw.modes ?? {};
+    if (raw.mode && !prior.modes[PRIMARY_SLUG]) prior.modes[PRIMARY_SLUG] = raw.mode;
   } catch {
-    prior = { files: {} };
+    prior = { files: {}, modes: {} };
   }
 }
 const pkg = JSON.parse(readFileSync(join(SRC, "package.json"), "utf8"));
-const lock = { version: pkg.version, mode: prior.mode, files: { ...prior.files } };
+const lock = { version: pkg.version, modes: { ...prior.modes }, files: { ...prior.files } };
+// Keep legacy `mode` field for backward compat with older lock files
+Object.defineProperty(lock, "_legacyMode", { get() { return this.modes[PRIMARY_SLUG]; }, enumerable: false });
 
 function ensureDir(p) {
   if (!DRY) mkdirSync(p, { recursive: true });
@@ -185,20 +205,34 @@ function copy(srcRel, destRel) {
   log(`${existed ? "update" : "copy  "} ${destRel}`);
 }
 
-function installModes() {
+function installMode(slug) {
   const rel = ".bob/custom_modes.yaml";
   const dest = join(TARGET, rel);
   const srcText = readFileSync(join(SRC, rel), "utf8").replace(/\r\n/g, "\n");
   const srcDoc = parseDocument(srcText);
-  const srcItem = srcDoc.get("customModes").items.find((n) => isMap(n) && n.get("slug") === SLUG);
+  const srcModes = srcDoc.get("customModes");
+  if (!isSeq(srcModes)) {
+    console.error(`Source ${rel} has no customModes sequence.`);
+    process.exit(1);
+  }
+  const srcItem = srcModes.items.find((n) => isMap(n) && n.get("slug") === slug);
+  if (!srcItem) {
+    console.error(`Mode slug "${slug}" not found in source ${rel}.`);
+    process.exit(1);
+  }
   const srcHash = modeHash(srcItem);
   installed.push(rel);
 
-  if (!existsSync(dest) || readFileSync(dest, "utf8").trim() === "") {
+  const isNewFile = !existsSync(dest) || readFileSync(dest, "utf8").trim() === "";
+  if (isNewFile) {
+    // Fresh install: create a file with only the requested slugs
     ensureDir(dirname(dest));
-    if (!DRY) writeFileSync(dest, srcText);
-    lock.mode = srcHash;
-    return log(`create ${rel}`);
+    if (DRY) {
+      lock.modes[slug] = srcHash;
+      return log(`append ${rel} (added ${slug})`);
+    }
+    writeFileSync(dest, "customModes: []\n");
+    // Fall through to the append path below to add only the requested slug
   }
 
   const destDoc = parseDocument(readFileSync(dest, "utf8"));
@@ -211,49 +245,58 @@ function installModes() {
   if (!isSeq(seq)) {
     destDoc.set("customModes", srcDoc.get("customModes"));
     if (!DRY) writeFileSync(dest, destDoc.toString());
-    lock.mode = srcHash;
+    lock.modes[slug] = srcHash;
     return log(`fill   ${rel} (customModes was missing)`);
   }
 
-  const idx = seq.items.findIndex((n) => isMap(n) && n.get("slug") === SLUG);
+  const idx = seq.items.findIndex((n) => isMap(n) && n.get("slug") === slug);
   if (idx === -1) {
     if (seq.items.length === 0) seq.flow = false;
     seq.items.push(srcItem);
     if (!DRY) writeFileSync(dest, destDoc.toString());
-    lock.mode = srcHash;
-    return log(`append ${rel} (added ${SLUG})`);
+    lock.modes[slug] = srcHash;
+    return log(`append ${rel} (added ${slug})`);
   }
 
   const destHash = modeHash(seq.items[idx]);
   if (destHash === srcHash) {
-    lock.mode = srcHash;
-    return log(`ok     ${rel} (${SLUG} up to date)`);
+    lock.modes[slug] = srcHash;
+    return log(`ok     ${rel} (${slug} up to date)`);
   }
-  const untouched = prior.mode === destHash;
+  const untouched = prior.modes[slug] === destHash;
   if (!FORCE && !untouched) {
-    return log(`skip   ${rel} (${SLUG} locally modified or not installed by this tool; use --force to replace it)`);
+    return log(`skip   ${rel} (${slug} locally modified or not installed by this tool; use --force to replace it)`);
   }
   seq.items[idx] = srcItem;
   if (!DRY) writeFileSync(dest, destDoc.toString());
-  lock.mode = srcHash;
-  log(`replace ${rel} (${SLUG} entry)`);
+  lock.modes[slug] = srcHash;
+  log(`replace ${rel} (${slug} entry)`);
 }
 
 // ── run ────────────────────────────────────────────────────────────────────────
-console.log(`Source: ${SRC}\nTarget: ${TARGET}\n`);
+console.log(`Source: ${SRC}\nTarget: ${TARGET}\nModes:  ${SLUGS.join(", ")}\n`);
 
-// 1. Custom mode definition
+// 1. Custom mode definitions (one pass per requested slug)
 if (!NO_MODE) {
-  installModes();
+  for (const slug of SLUGS) {
+    installMode(slug);
+  }
 } else {
   log("skip   .bob/custom_modes.yaml (--no-mode)");
 }
 
-// 2. Mode rules
+// 2. Mode rules (one rules-{slug}/ directory per requested slug)
 if (!NO_RULES) {
-  copy(`.bob/rules-${SLUG}`, `.bob/rules-${SLUG}`);
+  for (const slug of SLUGS) {
+    const rulesDir = `.bob/rules-${slug}`;
+    if (existsSync(join(SRC, rulesDir))) {
+      copy(rulesDir, rulesDir);
+    } else {
+      log(`skip   ${rulesDir}/ (no rules directory in source for ${slug})`);
+    }
+  }
 } else {
-  log(`skip   .bob/rules-${SLUG}/ (--no-rules)`);
+  log("skip   .bob/rules-*/ (--no-rules)");
 }
 
 // 3. Skills
@@ -314,15 +357,22 @@ if (!NO_TEMPLATES) {
 
 // 7. Mode documentation & customization guide
 if (!NO_README) {
-  copy("README.md", `README-${SLUG}.md`);
+  copy("README.md", `README-${PRIMARY_SLUG}.md`);
 } else {
-  log(`skip   README-${SLUG}.md (--no-readme)`);
+  log(`skip   README-${PRIMARY_SLUG}.md (--no-readme)`);
 }
 
 // 8. Install record
-if (!DRY && (lock.mode || Object.keys(lock.files).length > 0)) {
+const lockToWrite = {
+  version: lock.version,
+  modes: lock.modes,
+  // Legacy compatibility: keep `mode` field pointing at the primary slug's hash
+  mode: lock.modes[PRIMARY_SLUG],
+  files: lock.files,
+};
+if (!DRY && (Object.keys(lock.modes).length > 0 || Object.keys(lock.files).length > 0)) {
   mkdirSync(dirname(lockPath), { recursive: true });
-  writeFileSync(lockPath, `${JSON.stringify(lock, null, 2)}\n`);
+  writeFileSync(lockPath, `${JSON.stringify(lockToWrite, null, 2)}\n`);
 }
 installed.push(LOCK_REL);
 
@@ -353,8 +403,9 @@ if (flags.has("--git-exclude")) {
 const nodeMajor = Number(process.versions.node.split(".")[0]);
 console.log(`\nDone. Next steps in ${TARGET}:`);
 console.log("  1. Reopen the folder in Bob and trust the workspace.");
-console.log("  2. Pick the 'Cloud Architect' mode.");
-console.log(`  3. Review README-${SLUG}.md for mode documentation, usage, and customization.`);
+console.log("  2. Pick the 'Cloud Architect' mode for design work.");
+console.log("     Pick the 'Architecture Reviewer' mode for reviewing completed deliverables.");
+console.log(`  3. Review README-${PRIMARY_SLUG}.md for mode documentation, usage, and customization.`);
 console.log("  4. Fill in AGENTS.md and copy specs/TEMPLATE to specs/NNN-name/ for your architecture requirements.");
 console.log("  5. Optional: configure cloud doc MCP servers in .bob/mcp.json (from .bob/mcp.json.example).");
 if (nodeMajor < 18) console.log("  Warning: Node >= 18 is required to run this installer.");

@@ -8,16 +8,26 @@ Keep it short, accurate, and reviewed like code. Update it when conventions chan
 
 ## Purpose of this mode
 
-This workspace uses the `cloud-architect` Bob mode to design production-ready cloud architectures for enterprise environments. The mode handles any engagement type — single-cloud, multi-cloud, event-driven, migrations, data platforms, integration patterns, and more. The agent works from a written spec whose requirements a human has approved, and produces architecture deliverables. The no-implementation restriction applies to the `cloud-architect` mode only; other modes follow their own instructions.
+This workspace provides two Bob modes:
+
+- **`cloud-architect`** — designs production-ready cloud architectures for enterprise environments (any engagement type). Works from an approved spec; produces diagrams, component selections, security designs, integration patterns, data models, and implementation plans. No implementation code.
+- **`architecture-reviewer`** — read-only well-architected review of a completed deliverable. Produces a five-pillar gap analysis and open decision entries. Does not write files or produce architecture.
+
+The no-implementation restriction applies to the `cloud-architect` mode only; other modes follow their own instructions.
 
 **Workspace layout:**
 
 ```
-specs/          Spec-driven work: spec.md, plan.md, tasks.md per feature or system
+specs/          Spec-driven work: spec.md, plan.md, tasks.md, checkpoint.md per feature or system
 docs/           Architecture outputs produced by the agent (diagrams, decisions, models).
                 Shared across specs: every file MUST be prefixed with the spec number, e.g. docs/001-component-matrix.md
-.bob/           Bob config: custom mode, rules, MCP example
+.bob/           Bob config: custom modes, rules, MCP example
 ```
+
+A `checkpoint.md` file in each spec folder records the session state so work can resume across
+sessions or mode switches without re-reading the entire history: spec revision, completed
+artifacts, blockers, validation status, and the next action. The agent creates it after the
+first deliverable and updates it after each subsequent task completes.
 
 ---
 

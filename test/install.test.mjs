@@ -15,6 +15,8 @@ import { parse } from "yaml";
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const INSTALLER = join(ROOT, "scripts", "install.mjs");
 const SLUG = "cloud-architect";
+const REVIEWER_SLUG = "architecture-reviewer";
+const ALL_SLUGS = [SLUG, REVIEWER_SLUG];
 
 function workspace() {
   return mkdtempSync(join(tmpdir(), "bob-install-"));
@@ -39,7 +41,10 @@ test("fresh install creates mode, rules, skills and lock file", () => {
     const lock = JSON.parse(readFileSync(join(t, ".bob", `${SLUG}.lock.json`), "utf8"));
     assert.ok(lock.version);
     assert.match(lock.files[`.bob/rules-${SLUG}/01-role.md`], /^[0-9a-f]{64}$/);
+    // Legacy `mode` field and new `modes` map both present
     assert.match(lock.mode, /^[0-9a-f]{64}$/);
+    assert.match(lock.modes[SLUG], /^[0-9a-f]{64}$/);
+    assert.match(lock.modes[REVIEWER_SLUG], /^[0-9a-f]{64}$/);
   } finally {
     rmSync(t, { recursive: true, force: true });
   }
@@ -115,7 +120,7 @@ test("existing unrelated modes are preserved and the mode is appended", () => {
       "customModes:\n  - slug: other\n    name: Other\n    roleDefinition: x\n    groups: [read]\n",
     );
     install(t);
-    assert.deepEqual(modes(t).map((m) => m.slug).sort(), ["cloud-architect", "other"]);
+    assert.deepEqual(modes(t).map((m) => m.slug).sort(), ["architecture-reviewer", "cloud-architect", "other"]);
   } finally {
     rmSync(t, { recursive: true, force: true });
   }
@@ -253,4 +258,77 @@ test("spec template includes profile field", () => {
 test("example spec declares document-processing profile", () => {
   const text = readFileSync(join(ROOT, "specs", "001-doc-processing-platform", "spec.md"), "utf8");
   assert.match(text, /\*\*Profile:\*\* document-processing/);
+});
+
+test("default install installs all modes: cloud-architect and architecture-reviewer", () => {
+  const t = workspace();
+  try {
+    install(t);
+    const slugs = modes(t).map((m) => m.slug).sort();
+    assert.ok(slugs.includes(SLUG), "cloud-architect must be installed");
+    assert.ok(slugs.includes(REVIEWER_SLUG), "architecture-reviewer must be installed");
+    assert.ok(existsSync(join(t, ".bob", `rules-${REVIEWER_SLUG}`, "01-role.md")));
+    const lock = JSON.parse(readFileSync(join(t, ".bob", `${SLUG}.lock.json`), "utf8"));
+    assert.match(lock.modes[REVIEWER_SLUG], /^[0-9a-f]{64}$/, "lock must record architecture-reviewer hash");
+  } finally {
+    rmSync(t, { recursive: true, force: true });
+  }
+});
+
+test("--modes cloud-architect installs only cloud-architect, not architecture-reviewer", () => {
+  const t = workspace();
+  try {
+    install(t, "--modes", "cloud-architect");
+    const slugs = modes(t).map((m) => m.slug);
+    assert.ok(slugs.includes(SLUG), "cloud-architect must be installed");
+    assert.equal(slugs.includes(REVIEWER_SLUG), false, "architecture-reviewer must NOT be installed");
+    assert.equal(existsSync(join(t, ".bob", `rules-${REVIEWER_SLUG}`)), false,
+      "rules-architecture-reviewer must not be created");
+  } finally {
+    rmSync(t, { recursive: true, force: true });
+  }
+});
+
+test("--modes architecture-reviewer installs only architecture-reviewer", () => {
+  const t = workspace();
+  try {
+    install(t, "--modes", "architecture-reviewer");
+    const slugs = modes(t).map((m) => m.slug);
+    assert.ok(slugs.includes(REVIEWER_SLUG), "architecture-reviewer must be installed");
+    assert.equal(slugs.includes(SLUG), false, "cloud-architect must NOT be installed");
+    assert.ok(existsSync(join(t, ".bob", `rules-${REVIEWER_SLUG}`, "01-role.md")));
+  } finally {
+    rmSync(t, { recursive: true, force: true });
+  }
+});
+
+test("architecture-reviewer mode has no edit, mcp, subagent, or mode groups", () => {
+  const reviewer = modesFromSource().find((m) => m.slug === REVIEWER_SLUG);
+  assert.ok(reviewer, "architecture-reviewer must exist in source YAML");
+  const groups = reviewer.groups ?? [];
+  for (const forbidden of ["edit", "mcp", "subagent", "mode"]) {
+    assert.equal(groups.includes(forbidden), false, `architecture-reviewer must not have "${forbidden}" group`);
+  }
+  assert.ok(groups.includes("read"), "architecture-reviewer must have read group");
+  assert.ok(groups.includes("skill"), "architecture-reviewer must have skill group");
+});
+
+test("architecture-reviewer mode has allowedSubagents restricted to explore", () => {
+  const reviewer = modesFromSource().find((m) => m.slug === REVIEWER_SLUG);
+  assert.deepEqual(reviewer.allowedSubagents, ["explore"],
+    "architecture-reviewer must restrict subagents to explore only");
+});
+
+test("spec template includes checkpoint.md", () => {
+  const checkpointPath = join(ROOT, "specs", "TEMPLATE", "checkpoint.md");
+  assert.ok(existsSync(checkpointPath), "specs/TEMPLATE/checkpoint.md must exist");
+  const text = readFileSync(checkpointPath, "utf8");
+  assert.match(text, /Spec revision/);
+  assert.match(text, /Next action/);
+});
+
+test("mode workflow references checkpoint.md for session resumption", () => {
+  const mode = modesFromSource().find((m) => m.slug === SLUG);
+  assert.match(mode.customInstructions, /checkpoint\.md/,
+    "cloud-architect customInstructions must reference checkpoint.md");
 });
