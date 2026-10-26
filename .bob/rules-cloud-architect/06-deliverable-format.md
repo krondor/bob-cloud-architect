@@ -1,5 +1,3 @@
-<!-- always active -->
-
 # Deliverable Format
 
 The sections below describe the **completed architecture package**, not each artifact. A single
@@ -61,9 +59,8 @@ every section is either present somewhere in the package or noted as out-of-scop
     - API contract summary for every synchronous boundary
     - Data contract for every integration target (fields, types, versioning strategy)
 
-11. Target Project Folder Structure
-    - Top-level layout matching the architecture components
-    - One entry per deployable unit or major module
+11. Target Project Folder Structure — only when the spec's scope lists it
+    - Top-level layout matching the architecture components, one entry per deployable unit
     - Adapt to the spec's technology choices; do not impose a fixed folder tree
 
 12. Implementation Plan
@@ -77,10 +74,7 @@ every section is either present somewhere in the package or noted as out-of-scop
 
 ## Diagram conventions
 
-- `subgraph` for system boundaries (cloud region, enterprise network, external system)
-- Label every arrow with data type or event name
-- Failure paths: dashed arrows `-.->` 
-- Consistent node naming: `ServiceName["ServiceName\n(AWS/Azure/GCP)"]`
+See `04-architecture-standards.md` (C4 levels and diagram conventions).
 
 ## Tables
 

@@ -1,6 +1,6 @@
 ---
 name: well-architected-review
-version: 1.2.0
+version: 1.3.0
 description: >
   Structured five-pillar architecture review mapped to AWS Well-Architected Framework,
   Azure Well-Architected Framework, and Google Cloud's architecture pillars. Use to
@@ -17,8 +17,13 @@ when_to_use: >
 
 1. Read the spec and the current deliverable.
 2. Work through each pillar — answer each review question against the deliverable.
-3. For each gap (a question with no evidence), note it in the deliverable's Open Decisions
-   section with the pillar name, the question, and the suggested remediation.
+3. For each gap (a question with no evidence), record an entry with the pillar name, the
+   question, and the suggested remediation.
+   - In a mode that can write files (cloud-architect): add the entries to the deliverable's
+     Open Decisions section and to `docs/<spec-id>/review-findings.md`.
+   - In a read-only mode (architecture-reviewer): do not write. Emit the entries in chat as one
+     fenced block headed `review-findings (paste into docs/<spec-id>/review-findings.md)`, so
+     the cloud-architect mode can persist it and update `checkpoint.md`.
 4. A deliverable passes a pillar when all questions have documented evidence or an accepted
    risk acknowledgement. A deliverable passes the review when all five pillars pass.
 5. If the spec declares `profile: document-processing`, load the `document-processing-profile`
@@ -61,9 +66,11 @@ when_to_use: >
 
 ### Review questions
 
-1. Is there a least-privilege IAM role / managed identity per component (one role per service, no shared roles)?
-2. Is encryption at rest documented for every data store (type of key, KMS service)?
-3. Is encryption in transit enforced for every service-to-service connection (TLS version)?
+Questions marked **[P0]** are blocking: an unanswered P0 question makes its pillar ❌ Fail.
+
+1. **[P0]** Is there a least-privilege IAM role / managed identity per component (one role per service, no shared roles)?
+2. **[P0]** Is encryption at rest documented for every data store (type of key, KMS service)?
+3. **[P0]** Is encryption in transit enforced for every service-to-service connection (TLS version)?
 4. Are secrets in a secrets manager — not in environment variables, code, or config files?
 5. Is there an audit log for every security-relevant event (auth, data access, config change)?
 6. If the spec identifies data containing PII or sensitive information, is the handling policy documented (scan location, masking strategy, log exclusion)?
@@ -92,7 +99,9 @@ when_to_use: >
 
 ### Review questions
 
-1. Is there a retry strategy for every external call (max attempts, backoff algorithm, jitter)?
+Questions marked **[P0]** are blocking: an unanswered P0 question makes its pillar ❌ Fail.
+
+1. **[P0]** Is there a retry strategy for every external call (max attempts, backoff algorithm, jitter)?
 2. Is there a dead-letter queue or equivalent for every async processing path?
 3. Is there a defined recovery procedure for dead-letter messages (reprocessing trigger, alerting)?
 4. Are RPO and RTO targets stated in the spec or plan? Are they achievable with the chosen design?
@@ -193,7 +202,7 @@ After completing the review, produce a summary table:
 Status definitions:
 - ✅ **Pass** — all questions have documented evidence or accepted risk acknowledgements
 - ⚠️ **Gap** — 1–2 questions unanswered; deliverable can proceed with open decisions added
-- ❌ **Fail** — 3+ questions unanswered, or any P0 question unanswered (IAM, encryption, retry)
+- ❌ **Fail** — 3+ questions unanswered, or any question marked **[P0]** unanswered (IAM, encryption at rest and in transit, retry)
 
 A ❌ Fail on Security or Reliability blocks deliverable sign-off.
 A ⚠️ Gap on any pillar requires an open decision entry before handoff to engineering.

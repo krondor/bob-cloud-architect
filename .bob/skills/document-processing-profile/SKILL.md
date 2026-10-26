@@ -1,6 +1,6 @@
 ---
 name: document-processing-profile
-version: 1.0.1
+version: 1.1.0
 description: >
   Architecture profile for enterprise document-processing pipelines: ingest, validate, batch,
   LLM summarisation, and lakehouse output (Snowflake, Databricks, Apache Iceberg). Adds
@@ -44,6 +44,15 @@ Collect validated documents into micro-batches before LLM invocation to reduce p
 
 **Overflow protection:** if the document buffer exceeds the maximum batch size before the timer fires, split into multiple batches and enqueue each independently.
 
+**Use when:** documents arrive continuously, the cloud LLM offers a batch API, and end-to-end latency is minutes, not seconds.
+**Do NOT use when:** per-document latency < 5 s is required (use a synchronous inline LLM call), or volume is low enough that batching adds complexity without cost benefit.
+
+**Failure modes to design for:**
+- Buffer saturation: overflow split as above.
+- Partial batch failure (N of M documents fail): write per-document status to the reconciliation ledger; DLQ failed documents individually; do not re-run the whole batch.
+- Timer misfire / missed trigger: the reconciliation worker detects VALID documents with no `batch_id` after a TTL and enqueues a new batch.
+- Orphaned batch items on region failover: the buffer must be durable (DynamoDB / Cosmos DB / Firestore); drain before failover or use idempotent replay.
+
 ---
 
 ## Apache Iceberg multi-engine interoperability pattern
@@ -74,6 +83,15 @@ Direct cloud storage access from Snowflake / Databricks uses short-lived credent
 - Table format: Iceberg v2 (row-level deletes and upserts supported by both Snowflake and Databricks).
 - Snowflake access: Iceberg external table via `EXTERNAL VOLUME` + catalog integration.
 - Databricks access: Unity Catalog foreign catalog pointing to the same REST Catalog endpoint.
+
+**Use when:** both Snowflake and Databricks must query the same output, or open-table-format portability is required.
+**Do NOT use when:** only one engine needs access (use that engine's native format), or volume is small enough that duplication is cheaper than catalog infrastructure.
+
+**Failure modes to design for:**
+- Catalog unavailability: fall back to read-only direct storage if the catalog supports it; document the fallback.
+- Credential vending failure: writer cannot commit; retry with exponential backoff and jitter; alert on vending failures above a threshold.
+- Schema evolution conflict: use Iceberg schema evolution with backward/forward compatibility; test both engines on every schema change.
+- Concurrent writes from multiple engines: Iceberg v2 optimistic concurrency handles this; document the max retry count for commit conflicts.
 
 ---
 
@@ -110,6 +128,11 @@ Validated document → Cloud LLM (Bedrock / Azure OpenAI / Vertex AI)
 | Model not available in Cortex | ❌ Blocked | ✅ Use cloud LLM |
 | PII in document | ✅ Data stays inside Snowflake perimeter | ⚠️ PII scan mandatory before LLM call |
 | Latency requirement < 30 s | ⚠️ Depends on Cortex queue | ✅ Direct API call |
+
+**Failure modes to design for:**
+- Cortex model not available in the approved region: fall back to Path B; document the fallback model hierarchy in the prompt spec.
+- Snowpipe Streaming channel lag: monitor channel offset lag and alert above the SLA; the channel is stateful, so do not recreate it without draining.
+- Key-pair auth expiry: automate rotation; update the secret and the Snowflake user's `RSA_PUBLIC_KEY` property atomically.
 
 ---
 
@@ -158,6 +181,31 @@ Scheduled trigger (every N minutes, configurable)
 - DLQ depth > 10 items → P2 alert
 - Reconciliation discrepancy count > 0 → P3 alert within 5 minutes
 - Any doc in PENDING > 30 min → P2 alert
+
+**Use when:** end-to-end auditability is a compliance requirement, partial pipeline failures must be auto-detected, or several downstream systems must become eventually consistent.
+
+**Failure modes to design for:**
+- Worker failure mid-run: the worker is stateless; each run re-queries the ledger and is safe to restart.
+- Ledger write failure during a transition: use atomic writes (DynamoDB conditional write / Cosmos DB optimistic concurrency / Firestore transaction); never transition state without a ledger update.
+- False-positive discrepancies from eventual-consistency lag: add a configurable grace period (e.g. 5 min) before flagging a VALID doc with no `batch_id`.
+- Replay causing duplicates: downstream consumers must be idempotent on `doc_id`; replays set a `replay_correlation_id` for deduplication.
+
+| Component | AWS | Azure | GCP |
+|---|---|---|---|
+| Scheduler | EventBridge Scheduler | Functions timer trigger / Logic Apps | Cloud Scheduler |
+| Worker compute | Lambda | Azure Functions | Cloud Run job |
+| Ledger storage | DynamoDB (RDS for complex queries) | Cosmos DB / Azure SQL | Firestore / Cloud Spanner |
+| Alert channel | SNS | Event Grid / Service Bus | Pub/Sub |
+
+---
+
+## Anti-patterns for this profile
+
+| Anti-pattern | What it looks like | Risk |
+|---|---|---|
+| **LLM per document** | Invoking an LLM synchronously for each document as it arrives | Per-call overhead dominates; cost and latency spike under load; use the Batch Aggregator |
+| **Shared Iceberg credentials** | One long-lived IAM role or SAS token shared across Snowflake and Databricks | Blast radius on credential leak; no per-engine audit trail; use credential vending |
+| **Reconciliation as afterthought** | Audit ledger added post-launch without atomic writes | Ledger diverges from actual state under partial failures |
 
 ---
 

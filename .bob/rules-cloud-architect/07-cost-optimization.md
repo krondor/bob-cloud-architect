@@ -1,5 +1,3 @@
-<!-- always active -->
-
 # Cost Optimization
 
 A **Cost Model column is mandatory** in every component selection matrix — not optional.

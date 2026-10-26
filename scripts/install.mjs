@@ -52,7 +52,9 @@ const SRC = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 
 const args = process.argv.slice(2);
 const flags = new Set(args.filter((a) => a.startsWith("-") && !a.startsWith("--modes=")));
-const positional = args.filter((a) => !a.startsWith("-"));
+// The value after a bare `--modes` belongs to that flag, not to the target directory.
+const modesFlagIdx = args.indexOf("--modes");
+const positional = args.filter((a, i) => !a.startsWith("-") && (modesFlagIdx === -1 || i !== modesFlagIdx + 1));
 
 // Parse --modes flag (accepts --modes=a,b or --modes a,b)
 let slugsArg = args.find((a) => a.startsWith("--modes="));

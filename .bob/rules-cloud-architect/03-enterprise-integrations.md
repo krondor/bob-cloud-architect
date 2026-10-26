@@ -1,5 +1,3 @@
-<!-- always active -->
-
 # Enterprise Integration Architecture
 
 Every integration target in the selected spec must be documented with the six required fields below.

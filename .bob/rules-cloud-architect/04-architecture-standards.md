@@ -1,5 +1,3 @@
-<!-- always active -->
-
 # Architecture Standards and Patterns
 
 ## Pattern selection criteria
@@ -14,7 +12,6 @@ Use the table below to select the primary pattern; record the rationale as an AD
 | **Transactional outbox** | Guaranteed event publication on DB write; no 2PC | DB cannot support outbox table or CDC |
 | **CQRS** | Asymmetric read/write loads; multiple read representations | Simple CRUD; team lacks eventual-consistency experience |
 | **Event sourcing** | Full audit trail required; temporal queries needed | Simple CRUD; GDPR right-to-erasure without crypto-shredding |
-| **Batch aggregator** | Micro-batching before expensive downstream call; bursty arrivals | Low-latency per-item requirement (< 5 s end-to-end) |
 | **Strangler fig** | Incremental legacy migration; clear routing seams | Greenfield; no routing seam; short migration window |
 | **Bulkhead** | Different criticality / SLA across processing paths | All paths have equal criticality; isolation adds cost without benefit |
 | **Circuit breaker** | Slow/intermittent downstream service | Always-fast synchronous downstream; no fallback exists |
@@ -38,7 +35,6 @@ Open Decisions section) four things:
 |---|---|
 | Managed over self-managed | Default to managed unless spec states a constraint the managed service cannot meet |
 | Cloud-native over cloud-agnostic middleware | Use native queue/streaming/orchestration per cloud; only add Kafka/Temporal/Airflow if spec requires cross-cloud portability or team already operates it |
-| Cost model mandatory | Every component selection matrix row **must** include a Cost Model column |
 
 ---
 

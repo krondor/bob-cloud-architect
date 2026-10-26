@@ -1,5 +1,3 @@
-<!-- always active -->
-
 # Multi-Cloud Parity
 
 Cover every cloud named in the spec with equal depth and detail. Produce cloud-specific diagrams

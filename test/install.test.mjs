@@ -302,21 +302,41 @@ test("--modes architecture-reviewer installs only architecture-reviewer", () => 
   }
 });
 
-test("architecture-reviewer mode has no edit, mcp, subagent, or mode groups", () => {
+test("architecture-reviewer mode has no edit, mcp, or mode groups", () => {
   const reviewer = modesFromSource().find((m) => m.slug === REVIEWER_SLUG);
   assert.ok(reviewer, "architecture-reviewer must exist in source YAML");
   const groups = reviewer.groups ?? [];
-  for (const forbidden of ["edit", "mcp", "subagent", "mode"]) {
+  for (const forbidden of ["edit", "mcp", "mode"]) {
     assert.equal(groups.includes(forbidden), false, `architecture-reviewer must not have "${forbidden}" group`);
   }
   assert.ok(groups.includes("read"), "architecture-reviewer must have read group");
   assert.ok(groups.includes("skill"), "architecture-reviewer must have skill group");
 });
 
-test("architecture-reviewer mode has allowedSubagents restricted to explore", () => {
+test("architecture-reviewer allowedSubagents is effective: subagent group present, restricted to explore", () => {
   const reviewer = modesFromSource().find((m) => m.slug === REVIEWER_SLUG);
   assert.deepEqual(reviewer.allowedSubagents, ["explore"],
     "architecture-reviewer must restrict subagents to explore only");
+  // Bob's allowedSubagents only restricts presets of the `subagent` group; without the group it is inert.
+  assert.ok(reviewer.groups.includes("subagent"), "allowedSubagents has no effect without the subagent group");
+});
+
+test("--modes with a space-separated value works without an explicit target directory", () => {
+  const t = workspace();
+  try {
+    const res = spawnSync("node", [INSTALLER, "--modes", REVIEWER_SLUG, "--dry-run"], { cwd: t, encoding: "utf8" });
+    assert.equal(res.status, 0, `installer failed:\n${res.stdout}\n${res.stderr}`);
+    assert.match(res.stdout, new RegExp(`Modes:\\s+${REVIEWER_SLUG}`));
+    assert.doesNotMatch(res.stdout + res.stderr, /Target is not a directory/);
+  } finally {
+    rmSync(t, { recursive: true, force: true });
+  }
+});
+
+test("package version is at least 0.2.0 (v0.2.0 shipped modes and per-mode lock entries)", () => {
+  const pkg = JSON.parse(readFileSync(join(ROOT, "package.json"), "utf8"));
+  const [maj, min] = pkg.version.split(".").map(Number);
+  assert.ok(maj > 0 || min >= 2, `package.json version ${pkg.version} is behind the v0.2.0 release`);
 });
 
 test("spec template includes checkpoint.md", () => {
@@ -348,7 +368,7 @@ test("always-loaded rules carry no provider service tables (moved to the pattern
 
 test("always-loaded rules stay within the size ceiling", () => {
   const rules = readdirSync(rulesDir).reduce((n, f) => n + readRule(f).length, 0);
-  const ceiling = 23000; // chars across .bob/rules-cloud-architect; ratchet down in later phases
+  const ceiling = 22500; // chars across .bob/rules-cloud-architect; ratchet down in later phases
   assert.ok(rules <= ceiling, `rules are ${rules} chars, ceiling ${ceiling}`);
 });
 
@@ -382,4 +402,49 @@ test("artifacts live under docs/<spec-id>/ with an evidence register (F15)", () 
   const mode = modesFromSource().find((m) => m.slug === SLUG);
   assert.match(mode.customInstructions, /docs\/<spec-id>\//);
   assert.match(mode.customInstructions, /evidence-register\.md/);
+});
+
+// ---- Review-findings fixes (plan 006) ----
+
+const patternsSkill = () => readFileSync(join(ROOT, ".bob", "skills", "cloud-architecture-patterns", "SKILL.md"), "utf8");
+
+test("patterns skill holds no document-processing sections (owned by the profile skill)", () => {
+  const text = patternsSkill();
+  for (const h of ["## Serverless Batch Aggregator pattern", "## Apache Iceberg", "## Snowflake Cortex", "## End-to-end reconciliation"]) {
+    assert.equal(text.includes(h), false, `duplicated section "${h}" must live only in the profile skill`);
+  }
+  assert.doesNotMatch(text, /LLM per document|Shared Iceberg credentials|Reconciliation as afterthought/);
+  const profile = readFileSync(join(ROOT, ".bob", "skills", "document-processing-profile", "SKILL.md"), "utf8");
+  for (const h of ["## Serverless Batch Aggregator pattern", "## Apache Iceberg", "## Snowflake and Snowflake Cortex", "## End-to-end reconciliation", "## Anti-patterns for this profile"]) {
+    assert.ok(profile.includes(h), `profile skill missing "${h}"`);
+  }
+});
+
+test("decision tree has no dead-end branch pointing at patterns the catalog does not define", () => {
+  const text = patternsSkill();
+  assert.doesNotMatch(text, /Data Mesh|Lambda\/Kappa/);
+  // Every navigation anchor must resolve to a heading in the skill.
+  const slug = (h) => h.toLowerCase().replace(/[^\w\s-]/g, "").trim().replace(/\s+/g, "-");
+  const anchors = new Set([...text.matchAll(/^#{2,3} (.+)$/gm)].map((m) => slug(m[1])));
+  for (const m of text.matchAll(/\]\(#([^)]+)\)/g)) {
+    assert.ok(anchors.has(m[1]), `navigation anchor #${m[1]} has no matching heading`);
+  }
+});
+
+test("universal rules carry no document-processing residue and no placeholder headers", () => {
+  for (const f of readdirSync(rulesDir)) {
+    const text = readRule(f);
+    assert.doesNotMatch(text, /doc-validator|batch-aggregator|Batch aggregator|Processed documents/, `${f} has doc-processing residue`);
+    assert.doesNotMatch(text, /<!-- always active -->/, `${f} has a redundant header`);
+  }
+});
+
+test("review skill marks P0 questions and defines a read-only findings handoff", () => {
+  const text = readFileSync(join(ROOT, ".bob", "skills", "well-architected-review", "SKILL.md"), "utf8");
+  assert.ok((text.match(/\*\*\[P0\]\*\*/g) ?? []).length >= 4, "P0 questions must be marked");
+  assert.match(text, /review-findings/);
+  const reviewerRule = readFileSync(join(ROOT, ".bob", "rules-architecture-reviewer", "01-role.md"), "utf8");
+  assert.match(reviewerRule, /review-findings/);
+  const architect = modesFromSource().find((m) => m.slug === SLUG);
+  assert.match(architect.customInstructions, /review-findings/);
 });

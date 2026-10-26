@@ -1,12 +1,10 @@
-<!-- always active -->
-
 # High Availability and Disaster Recovery
 
 Every architecture must address HA/DR unless the spec explicitly excludes it with a rationale.
 
 ## Required HA section in the deliverable
 
-Add after Section 6 — Failure Handling Design:
+This is Section 7 of the package (see `06-deliverable-format.md`). Use this structure:
 
 ```
 ## High Availability and Disaster Recovery

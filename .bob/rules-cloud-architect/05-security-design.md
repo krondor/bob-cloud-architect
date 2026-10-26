@@ -1,5 +1,3 @@
-<!-- always active -->
-
 # Security Design
 
 Every architecture produced in this mode must include a security design section covering all four domains below.
@@ -7,7 +5,7 @@ Every architecture produced in this mode must include a security design section 
 ## IAM and RBAC
 
 - Define a least-privilege IAM role or service account per component (one role per service, no shared roles across services).
-- Name each role explicitly in the architecture (e.g. `doc-validator-role`, `batch-aggregator-role`).
+- Name each role explicitly in the architecture (e.g. `orders-api-role`, `report-worker-role`).
 - Show which role has access to which resource with what action permissions.
 - For AWS: IAM roles with resource-based policies. For Azure: Managed Identities + RBAC role assignments. For GCP: a dedicated attached service account per Cloud Run / Cloud Run functions service; Workload Identity Federation for GKE for in-cluster workloads; Workload Identity Federation (instead of service account keys) for external or multicloud workloads; plus IAM bindings.
 - No static long-lived credentials. All compute uses identity federation or managed identity.
@@ -19,7 +17,7 @@ Every architecture produced in this mode must include a security design section 
 | Data at rest | AES-256 via cloud KMS (AWS KMS / Azure Key Vault / Cloud KMS). Customer-managed keys (CMK) preferred for enterprise data. |
 | Data in transit | TLS 1.2 minimum, TLS 1.3 preferred. No plaintext connections between services. On GCP load balancers, attach an explicit SSL policy with minimum TLS 1.2 (MODERN or RESTRICTED profile); with no policy attached, the default is the COMPATIBLE profile with minimum TLS 1.0. |
 | Secrets | Never in environment variables directly. Reference secrets store ARN/URI only. On GCP Cloud Run, prefer Secret Manager volume mounts: env vars are resolved once at instance startup, while mounts fetch the latest version. |
-| Processed documents (output) | Encrypted at rest in output storage. Encryption key separate from input storage key. |
+| Output / derived data | Encrypted at rest in output storage. Use a key separate from the input store's key when the data classifications differ. |
 
 ## Secrets management
 

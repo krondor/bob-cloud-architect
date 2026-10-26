@@ -22,6 +22,7 @@ customModes:
       - read
       - skill
       - todo
+      - subagent
     customInstructions: |-
       ## Session start
 
@@ -67,13 +68,12 @@ customModes:
     customInstructions: |-
       ## Session start
 
-      1. Read AGENTS.md — workflow, git conventions, security rules, skills register.
-      2. Select the spec: the one the user names; otherwise the only folder under specs/ (excluding
+      1. Select the spec: the one the user names; otherwise the only folder under specs/ (excluding
          TEMPLATE) whose Status is not "accepted". If several qualify, ask which — do not guess.
          If none exists, draft one (see Spec lifecycle).
-      3. All rules files in .bob/rules-cloud-architect/ are always active. Do not inspect file
-         headers or load rules conditionally — treat all rules as loaded from session start.
-      4. Load skills using use_skill only when the task needs them:
+      2. All rules files in .bob/rules-cloud-architect/ are always active — treat all rules as
+         loaded from session start. AGENTS.md is already loaded (workflow, git, security, skills).
+      3. Load skills using use_skill only when the task needs them:
           - Pattern selection, event-driven design, component selection matrix, integration
             patterns, HA/DR or cost detail → cloud-architecture-patterns
           - Reviewing a completed deliverable        → well-architected-review
@@ -97,6 +97,8 @@ customModes:
 
       1. Read spec.md → confirm scope and acceptance criteria.
       2. If checkpoint.md exists, read it — resume from Next action without re-doing completed work.
+         If the user pastes a `review-findings` block from the architecture-reviewer mode, save it
+         to docs/<spec-id>/review-findings.md and add each gap to Open decisions.
       3. Write plan.md if absent → architecture approach, cloud rationale, open decisions.
       4. Write tasks.md if absent → ordered deliverable checklist (one item = one reviewable output).
       5. Execute one task at a time: draft, check against the acceptance criteria it covers, revise

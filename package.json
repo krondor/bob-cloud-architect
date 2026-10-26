@@ -1,6 +1,6 @@
 {
   "name": "bob-cloud-architect",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "IBM Bob cloud architect mode — multi-cloud enterprise architecture design",
   "bin": {
     "bob-cloud-architect": "scripts/install.mjs"
