@@ -1,6 +1,6 @@
 ---
 name: cloud-architecture-patterns
-version: 1.3.0
+version: 1.3.1
 description: >
   Pattern catalog for enterprise cloud architecture. Covers event-driven, data, structural,
   and integration patterns with cloud-native service mappings for AWS, Azure, and GCP.
@@ -139,7 +139,7 @@ On failure, the orchestrator issues compensating transactions to undo completed 
 |---|---|---|---|
 | Orchestrator | Step Functions (Standard workflow — use Standard, not Express; sagas require long-running, exactly-once execution) | Durable Functions / Logic Apps | Workflows |
 | State persistence | Step Functions built-in | Durable Functions storage | Workflows built-in |
-| Async step trigger | SQS + Lambda | Service Bus + Functions | Pub/Sub + Cloud Functions |
+| Async step trigger | SQS + Lambda | Service Bus + Functions | Pub/Sub + Cloud Run functions |
 
 ---
 
@@ -168,7 +168,7 @@ without distributed transactions.
 | Capability | AWS | Azure | GCP |
 |---|---|---|---|
 | CDC / relay | DMS + Kinesis or Debezium on ECS | Azure Database for PostgreSQL logical replication + Functions | Datastream + Pub/Sub |
-| Outbox polling | Lambda on schedule | Functions timer trigger | Cloud Scheduler + Cloud Functions |
+| Outbox polling | Lambda on schedule | Functions timer trigger | Cloud Scheduler + Cloud Run functions |
 
 ---
 
@@ -198,8 +198,8 @@ that return data). Each side can be scaled, stored, and optimized independently.
 |---|---|---|---|
 | Write store | RDS / DynamoDB / Aurora | Cosmos DB / Azure SQL | Cloud Spanner / Firestore |
 | Event stream | Kinesis / EventBridge Pipes | Event Hub / Service Bus | Pub/Sub |
-| Read store | OpenSearch / DynamoDB / ElastiCache | Azure Cognitive Search / Cosmos DB | BigQuery / Memorystore |
-| Projection compute | Lambda | Functions | Cloud Functions / Dataflow |
+| Read store | OpenSearch / DynamoDB / ElastiCache | Azure AI Search / Cosmos DB | BigQuery / Memorystore |
+| Projection compute | Lambda | Functions | Cloud Run functions / Dataflow |
 
 ---
 

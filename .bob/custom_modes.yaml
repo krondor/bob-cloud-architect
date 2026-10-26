@@ -3,7 +3,7 @@ customModes:
     name: Architecture Reviewer
     description: >-
       Read-only well-architected review of a completed architecture deliverable against
-      the five-pillar framework (AWS WAF, Azure WAF, Google Cloud Architecture Framework).
+      the five-pillar framework (AWS WAF, Azure WAF, Google Cloud Well-Architected Framework).
     whenToUse: >-
       Use when reviewing a completed architecture deliverable before handoff to engineering.
       Produces a structured gap analysis against the five-pillar well-architected framework.

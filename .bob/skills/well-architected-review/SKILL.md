@@ -1,10 +1,10 @@
 ---
 name: well-architected-review
-version: 1.3.0
+version: 1.4.0
 description: >
-  Structured five-pillar architecture review mapped to AWS Well-Architected Framework,
-  Azure Well-Architected Framework, and Google Cloud's architecture pillars. Use to
-  evaluate a spec or completed deliverable before calling a task done.
+  Structured five-pillar architecture review (plus an optional Sustainability pillar) mapped
+  to the AWS, Azure, and Google Cloud Well-Architected Frameworks. Use to evaluate a spec or
+  completed deliverable before calling a task done.
 when_to_use: >
   Load when reviewing a completed architecture deliverable, when a spec task explicitly
   calls for a well-architected review, or when the agent needs to identify gaps before
@@ -25,7 +25,8 @@ when_to_use: >
      fenced block headed `review-findings (paste into docs/<spec-id>/review-findings.md)`, so
      the cloud-architect mode can persist it and update `checkpoint.md`.
 4. A deliverable passes a pillar when all questions have documented evidence or an accepted
-   risk acknowledgement. A deliverable passes the review when all five pillars pass.
+   risk acknowledgement. A deliverable passes the review when all five core pillars pass (and Pillar 6 if the spec
+   requires it — see below).
 5. If the spec declares `profile: document-processing`, load the `document-processing-profile`
    skill and apply its additional review checks after completing this review.
 
@@ -56,7 +57,7 @@ when_to_use: >
 |---|---|
 | AWS | [Operational Excellence Pillar](https://docs.aws.amazon.com/wellarchitected/latest/operational-excellence-pillar/welcome.html) |
 | Azure | [Operational Excellence — Azure WAF](https://learn.microsoft.com/en-us/azure/well-architected/operational-excellence/) |
-| GCP | [Operational excellence — Google Cloud Architecture Framework](https://cloud.google.com/architecture/framework/operational-excellence) |
+| GCP | [Operational excellence — Google Cloud Well-Architected Framework](https://docs.cloud.google.com/architecture/framework/operational-excellence) |
 
 ---
 
@@ -89,7 +90,7 @@ Questions marked **[P0]** are blocking: an unanswered P0 question makes its pill
 |---|---|
 | AWS | [Security Pillar](https://docs.aws.amazon.com/wellarchitected/latest/security-pillar/welcome.html) |
 | Azure | [Security — Azure WAF](https://learn.microsoft.com/en-us/azure/well-architected/security/) |
-| GCP | [Security, privacy, and compliance — Google Cloud Architecture Framework](https://cloud.google.com/architecture/framework/security) |
+| GCP | [Security, privacy, and compliance — Google Cloud Well-Architected Framework](https://docs.cloud.google.com/architecture/framework/security) |
 
 ---
 
@@ -121,7 +122,7 @@ Questions marked **[P0]** are blocking: an unanswered P0 question makes its pill
 |---|---|
 | AWS | [Reliability Pillar](https://docs.aws.amazon.com/wellarchitected/latest/reliability-pillar/welcome.html) |
 | Azure | [Reliability — Azure WAF](https://learn.microsoft.com/en-us/azure/well-architected/reliability/) |
-| GCP | [Reliability — Google Cloud Architecture Framework](https://cloud.google.com/architecture/framework/reliability) |
+| GCP | [Reliability — Google Cloud Well-Architected Framework](https://docs.cloud.google.com/architecture/framework/reliability) |
 
 ---
 
@@ -151,7 +152,7 @@ Questions marked **[P0]** are blocking: an unanswered P0 question makes its pill
 |---|---|
 | AWS | [Performance Efficiency Pillar](https://docs.aws.amazon.com/wellarchitected/latest/performance-efficiency-pillar/welcome.html) |
 | Azure | [Performance Efficiency — Azure WAF](https://learn.microsoft.com/en-us/azure/well-architected/performance-efficiency/) |
-| GCP | [Performance optimization — Google Cloud Architecture Framework](https://cloud.google.com/architecture/framework/performance-optimization) |
+| GCP | [Performance optimization — Google Cloud Well-Architected Framework](https://docs.cloud.google.com/architecture/framework/performance-optimization) |
 
 ---
 
@@ -181,7 +182,30 @@ Questions marked **[P0]** are blocking: an unanswered P0 question makes its pill
 |---|---|
 | AWS | [Cost Optimization Pillar](https://docs.aws.amazon.com/wellarchitected/latest/cost-optimization-pillar/welcome.html) |
 | Azure | [Cost Optimization — Azure WAF](https://learn.microsoft.com/en-us/azure/well-architected/cost-optimization/) |
-| GCP | [Cost optimization — Google Cloud Architecture Framework](https://cloud.google.com/architecture/framework/cost-optimization) |
+| GCP | [Cost optimization — Google Cloud Well-Architected Framework](https://docs.cloud.google.com/architecture/framework/cost-optimization) |
+
+---
+
+## Pillar 6 — Sustainability (optional)
+
+AWS and Google Cloud publish Sustainability as a sixth pillar; Azure publishes it as a
+separate Well-Architected overview. Review it only when the spec lists sustainability or
+carbon reporting as a requirement or constraint. It does not change the five-pillar pass rule.
+
+### Review questions
+
+1. Are region choices justified against carbon intensity as well as latency, residency, and cost?
+2. Are workloads sized and scheduled to avoid idle capacity (scale-to-zero, batch windows, rightsizing)?
+3. Are data retention and storage-tier policies defined so data is not kept hot longer than needed?
+4. Is the provider's carbon-reporting tool named as the measurement source?
+
+### Cloud framework references
+
+| Cloud | Framework section |
+|---|---|
+| AWS | [Sustainability Pillar](https://docs.aws.amazon.com/wellarchitected/latest/sustainability-pillar/sustainability-pillar.html) |
+| Azure | [Sustainability — Azure WAF](https://learn.microsoft.com/en-us/azure/well-architected/sustainability/) |
+| GCP | [Sustainability — Google Cloud Well-Architected Framework](https://docs.cloud.google.com/architecture/framework/sustainability) |
 
 ---
 
@@ -197,6 +221,7 @@ After completing the review, produce a summary table:
 | Reliability | ... | ... | ... |
 | Performance Efficiency | ... | ... | ... |
 | Cost Optimization | ... | ... | ... |
+| Sustainability (optional) | ... | ... | ... |
 ```
 
 Status definitions:
