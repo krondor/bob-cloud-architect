@@ -15,6 +15,8 @@ import { parse } from "yaml";
 const ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const INSTALLER = join(ROOT, "scripts", "install.mjs");
 const SLUG = "cloud-architect";
+const REVIEWER_SLUG = "architecture-reviewer";
+const ALL_SLUGS = [SLUG, REVIEWER_SLUG];
 
 function workspace() {
   return mkdtempSync(join(tmpdir(), "bob-install-"));
@@ -39,7 +41,10 @@ test("fresh install creates mode, rules, skills and lock file", () => {
     const lock = JSON.parse(readFileSync(join(t, ".bob", `${SLUG}.lock.json`), "utf8"));
     assert.ok(lock.version);
     assert.match(lock.files[`.bob/rules-${SLUG}/01-role.md`], /^[0-9a-f]{64}$/);
+    // Legacy `mode` field and new `modes` map both present
     assert.match(lock.mode, /^[0-9a-f]{64}$/);
+    assert.match(lock.modes[SLUG], /^[0-9a-f]{64}$/);
+    assert.match(lock.modes[REVIEWER_SLUG], /^[0-9a-f]{64}$/);
   } finally {
     rmSync(t, { recursive: true, force: true });
   }
@@ -115,7 +120,7 @@ test("existing unrelated modes are preserved and the mode is appended", () => {
       "customModes:\n  - slug: other\n    name: Other\n    roleDefinition: x\n    groups: [read]\n",
     );
     install(t);
-    assert.deepEqual(modes(t).map((m) => m.slug).sort(), ["cloud-architect", "other"]);
+    assert.deepEqual(modes(t).map((m) => m.slug).sort(), ["architecture-reviewer", "cloud-architect", "other"]);
   } finally {
     rmSync(t, { recursive: true, force: true });
   }
@@ -210,3 +215,171 @@ test("mode instructions define the spec lifecycle and no longer require one-pass
 function modesFromSource() {
   return parse(readFileSync(join(ROOT, ".bob", "custom_modes.yaml"), "utf8")).customModes;
 }
+
+test("base mode constraints are cloud-agnostic: no unconditional three-cloud parity or PII-before-LLM", () => {
+  const mode = modesFromSource().find((m) => m.slug === SLUG);
+  // Three-cloud parity must be conditional on spec, not an unconditional hard constraint
+  assert.doesNotMatch(mode.customInstructions, /AWS, Azure, and GCP are always equal targets/);
+  assert.doesNotMatch(mode.customInstructions, /always equal targets/i);
+  // PII-before-LLM is a doc-processing profile constraint, not a base mode constraint
+  assert.doesNotMatch(mode.customInstructions, /PII must be sanitized before/i);
+  // Base rules must not mention three-cloud as unconditional
+  const rules = [
+    readFileSync(join(ROOT, ".bob", "rules-cloud-architect", "06-deliverable-format.md"), "utf8"),
+    readFileSync(join(ROOT, ".bob", "rules-cloud-architect", "07-cost-optimization.md"), "utf8"),
+  ];
+  for (const text of rules) {
+    assert.doesNotMatch(text, /Iceberg Parquet.*reconciliation/i, "base rule must not reference doc-processing schemas");
+    assert.doesNotMatch(text, /LLM token cost/i, "LLM token cost rule belongs in doc-processing profile skill");
+  }
+});
+
+test("document-processing-profile skill exists and declares profile constraints", () => {
+  const skillPath = join(ROOT, ".bob", "skills", "document-processing-profile", "SKILL.md");
+  assert.ok(existsSync(skillPath), "document-processing-profile skill must exist");
+  const text = readFileSync(skillPath, "utf8");
+  assert.match(text, /PII must be sanitized before any document content reaches an LLM API/);
+  assert.match(text, /reconciliation_ledger/);
+  assert.match(text, /processed_summaries/);
+  assert.match(text, /Snowflake/);
+});
+
+test("well-architected-review skill has no unconditional [POC] checks", () => {
+  const text = readFileSync(join(ROOT, ".bob", "skills", "well-architected-review", "SKILL.md"), "utf8");
+  assert.doesNotMatch(text, /\[POC\]/);
+  assert.match(text, /document-processing-profile/, "WAR skill must reference the profile skill for additional checks");
+});
+
+test("spec template includes profile field", () => {
+  const text = readFileSync(join(ROOT, "specs", "TEMPLATE", "spec.md"), "utf8");
+  assert.match(text, /\*\*Profile:\*\*/);
+});
+
+test("example spec declares document-processing profile", () => {
+  const text = readFileSync(join(ROOT, "specs", "001-doc-processing-platform", "spec.md"), "utf8");
+  assert.match(text, /\*\*Profile:\*\* document-processing/);
+});
+
+test("default install installs all modes: cloud-architect and architecture-reviewer", () => {
+  const t = workspace();
+  try {
+    install(t);
+    const slugs = modes(t).map((m) => m.slug).sort();
+    assert.ok(slugs.includes(SLUG), "cloud-architect must be installed");
+    assert.ok(slugs.includes(REVIEWER_SLUG), "architecture-reviewer must be installed");
+    assert.ok(existsSync(join(t, ".bob", `rules-${REVIEWER_SLUG}`, "01-role.md")));
+    const lock = JSON.parse(readFileSync(join(t, ".bob", `${SLUG}.lock.json`), "utf8"));
+    assert.match(lock.modes[REVIEWER_SLUG], /^[0-9a-f]{64}$/, "lock must record architecture-reviewer hash");
+  } finally {
+    rmSync(t, { recursive: true, force: true });
+  }
+});
+
+test("--modes cloud-architect installs only cloud-architect, not architecture-reviewer", () => {
+  const t = workspace();
+  try {
+    install(t, "--modes", "cloud-architect");
+    const slugs = modes(t).map((m) => m.slug);
+    assert.ok(slugs.includes(SLUG), "cloud-architect must be installed");
+    assert.equal(slugs.includes(REVIEWER_SLUG), false, "architecture-reviewer must NOT be installed");
+    assert.equal(existsSync(join(t, ".bob", `rules-${REVIEWER_SLUG}`)), false,
+      "rules-architecture-reviewer must not be created");
+  } finally {
+    rmSync(t, { recursive: true, force: true });
+  }
+});
+
+test("--modes architecture-reviewer installs only architecture-reviewer", () => {
+  const t = workspace();
+  try {
+    install(t, "--modes", "architecture-reviewer");
+    const slugs = modes(t).map((m) => m.slug);
+    assert.ok(slugs.includes(REVIEWER_SLUG), "architecture-reviewer must be installed");
+    assert.equal(slugs.includes(SLUG), false, "cloud-architect must NOT be installed");
+    assert.ok(existsSync(join(t, ".bob", `rules-${REVIEWER_SLUG}`, "01-role.md")));
+  } finally {
+    rmSync(t, { recursive: true, force: true });
+  }
+});
+
+test("architecture-reviewer mode has no edit, mcp, subagent, or mode groups", () => {
+  const reviewer = modesFromSource().find((m) => m.slug === REVIEWER_SLUG);
+  assert.ok(reviewer, "architecture-reviewer must exist in source YAML");
+  const groups = reviewer.groups ?? [];
+  for (const forbidden of ["edit", "mcp", "subagent", "mode"]) {
+    assert.equal(groups.includes(forbidden), false, `architecture-reviewer must not have "${forbidden}" group`);
+  }
+  assert.ok(groups.includes("read"), "architecture-reviewer must have read group");
+  assert.ok(groups.includes("skill"), "architecture-reviewer must have skill group");
+});
+
+test("architecture-reviewer mode has allowedSubagents restricted to explore", () => {
+  const reviewer = modesFromSource().find((m) => m.slug === REVIEWER_SLUG);
+  assert.deepEqual(reviewer.allowedSubagents, ["explore"],
+    "architecture-reviewer must restrict subagents to explore only");
+});
+
+test("spec template includes checkpoint.md", () => {
+  const checkpointPath = join(ROOT, "specs", "TEMPLATE", "checkpoint.md");
+  assert.ok(existsSync(checkpointPath), "specs/TEMPLATE/checkpoint.md must exist");
+  const text = readFileSync(checkpointPath, "utf8");
+  assert.match(text, /Spec revision/);
+  assert.match(text, /Next action/);
+});
+
+test("mode workflow references checkpoint.md for session resumption", () => {
+  const mode = modesFromSource().find((m) => m.slug === SLUG);
+  assert.match(mode.customInstructions, /checkpoint\.md/,
+    "cloud-architect customInstructions must reference checkpoint.md");
+});
+
+// ---- Phase 5: reduced mandatory context ----
+
+const rulesDir = join(ROOT, ".bob", "rules-cloud-architect");
+const readRule = (f) => readFileSync(join(rulesDir, f), "utf8");
+
+test("always-loaded rules carry no provider service tables (moved to the patterns skill)", () => {
+  for (const f of readdirSync(rulesDir)) {
+    const text = readRule(f);
+    assert.doesNotMatch(text, /\|\s*Capability\s*\|\s*AWS\s*\|/, `${f} has a provider service table`);
+    assert.doesNotMatch(text, /\|\s*Cloud\s*\|\s*Upload/, `${f} has an integration mapping table`);
+  }
+});
+
+test("always-loaded rules stay within the size ceiling", () => {
+  const rules = readdirSync(rulesDir).reduce((n, f) => n + readRule(f).length, 0);
+  const ceiling = 23000; // chars across .bob/rules-cloud-architect; ratchet down in later phases
+  assert.ok(rules <= ceiling, `rules are ${rules} chars, ceiling ${ceiling}`);
+});
+
+test("patterns skill holds the moved reference sections and a navigation entry point", () => {
+  const text = readFileSync(join(ROOT, ".bob", "skills", "cloud-architecture-patterns", "SKILL.md"), "utf8");
+  for (const h of ["## Skill navigation", "## Cloud service reference", "## Integration pattern mappings", "## HA/DR reference", "## Cost reference"]) {
+    assert.ok(text.includes(h), `missing ${h}`);
+  }
+});
+
+test("pattern catalog no longer contradicts itself on choreography and sagas (F14)", () => {
+  const std = readRule("04-architecture-standards.md");
+  assert.doesNotMatch(std, /Compensating transactions required; flow > 4–5 steps/);
+  const skill = readFileSync(join(ROOT, ".bob", "skills", "cloud-architecture-patterns", "SKILL.md"), "utf8");
+  assert.match(skill, /simple application/i, "decision tree needs a simple-application branch");
+  assert.doesNotMatch(skill, /Is strict ordering required across all events\?/);
+});
+
+test("significant recommendations require the four justification questions", () => {
+  const std = readRule("04-architecture-standards.md");
+  for (const k of ["Forcing requirement", "Simpler alternative", "Operational burden", "Evidence that would change"]) {
+    assert.ok(std.includes(k), `missing "${k}"`);
+  }
+});
+
+test("artifacts live under docs/<spec-id>/ with an evidence register (F15)", () => {
+  const fmt = readRule("06-deliverable-format.md");
+  assert.match(fmt, /docs\/<spec-id>\//);
+  assert.match(fmt, /evidence-register\.md/);
+  assert.doesNotMatch(fmt, /prefixed with the spec number/);
+  const mode = modesFromSource().find((m) => m.slug === SLUG);
+  assert.match(mode.customInstructions, /docs\/<spec-id>\//);
+  assert.match(mode.customInstructions, /evidence-register\.md/);
+});

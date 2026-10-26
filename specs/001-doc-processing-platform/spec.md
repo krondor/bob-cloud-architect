@@ -4,6 +4,7 @@
 **Mode:** cloud-architect
 **Status:** in-progress
 **Requirements approval:** pending <!-- example spec: a human sets this to "approved by <name> on <date> at <revision>" before running the mode -->
+**Profile:** document-processing
 **Created:** 2025-01-27
 **Author:** enterprise-poc-team
 
@@ -93,7 +94,7 @@ The architecture deliverable is complete when all of the following are satisfied
 - [ ] CloudEvents ingestion event JSON Schema present in deliverable
 - [ ] Status & reconciliation ledger DDL present in deliverable
 - [ ] Processed summary output schema (Parquet/Iceberg DDL) present in deliverable
-- [ ] AI prompt specification present (`prompts/001-document_summary_prompt.yaml` format with variable injection points and hyperparameters)
+- [ ] AI prompt specification present (`docs/001-doc-processing-platform/document_summary_prompt.yaml` format with variable injection points and hyperparameters)
 - [ ] Canonical project folder tree present in deliverable
 - [ ] Implementation plan with ordered phases and hand-off criteria to downstream modes
 

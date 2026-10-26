@@ -1,6 +1,6 @@
 ---
 name: well-architected-review
-version: 1.1.1
+version: 1.2.0
 description: >
   Structured five-pillar architecture review mapped to AWS Well-Architected Framework,
   Azure Well-Architected Framework, and Google Cloud's architecture pillars. Use to
@@ -21,6 +21,8 @@ when_to_use: >
    section with the pillar name, the question, and the suggested remediation.
 4. A deliverable passes a pillar when all questions have documented evidence or an accepted
    risk acknowledgement. A deliverable passes the review when all five pillars pass.
+5. If the spec declares `profile: document-processing`, load the `document-processing-profile`
+   skill and apply its additional review checks after completing this review.
 
 ---
 
@@ -32,18 +34,16 @@ when_to_use: >
 
 1. Are there structured logs from every component with a consistent format (JSON, structured fields)?
 2. Is there a defined alerting strategy — conditions, thresholds, and recipients?
-3. **[POC]** Are DLQ alert thresholds explicitly defined (depth limit, message age limit)?
-4. **[POC]** Is dead-letter replay automation documented (trigger mechanism, replay queue, idempotency guarantee)?
-5. **[POC]** Is a scheduled reconciliation worker specified (trigger interval, discrepancy alert path, run log schema)?
-6. Is there a runbook pointer for each failure mode in the deliverable?
-7. Is the deployment process defined (how a new version is released without downtime)?
-8. Are all configuration values externalized (not baked into the artifact) and their source documented?
+3. Is there a runbook pointer for each failure mode in the deliverable?
+4. Is the deployment process defined (how a new version is released without downtime)?
+5. Are all configuration values externalized (not baked into the artifact) and their source documented?
+6. Are dead-letter queues or equivalent error paths present for every async processing flow, with alert thresholds defined?
 
 ### Common gaps
 
+- Alert conditions not specified despite a log strategy being present
 - DLQ documented but no alert threshold or automated replay trigger
-- Reconciliation worker mentioned but trigger interval and discrepancy SLA not defined
-- Log strategy present but alert conditions not specified
+- Log strategy present but deployment process not defined
 
 ### Cloud framework references
 
@@ -62,22 +62,19 @@ when_to_use: >
 ### Review questions
 
 1. Is there a least-privilege IAM role / managed identity per component (one role per service, no shared roles)?
-2. **[POC]** Are CMK KMS keys uniquely specified per micro-component (separate key per service, not one shared key)?
-3. Is encryption at rest documented for every data store (type of key, KMS service)?
-4. Is encryption in transit enforced for every service-to-service connection (TLS version)?
-5. Are secrets in a secrets manager — not in environment variables, code, or config files?
-6. Is there an audit log for every security-relevant event (auth, data access, config change)?
-7. **[POC]** Is PII sanitization explicitly placed before LLM API invocation in the architecture?
-8. Is the PII handling policy documented (scan location, masking strategy, log exclusion)?
-9. Is the network boundary defined (VPC/VNet, subnets, private endpoints for managed services)?
-10. Is there a stated compliance requirement and is the architecture consistent with it?
+2. Is encryption at rest documented for every data store (type of key, KMS service)?
+3. Is encryption in transit enforced for every service-to-service connection (TLS version)?
+4. Are secrets in a secrets manager — not in environment variables, code, or config files?
+5. Is there an audit log for every security-relevant event (auth, data access, config change)?
+6. If the spec identifies data containing PII or sensitive information, is the handling policy documented (scan location, masking strategy, log exclusion)?
+7. Is the network boundary defined (VPC/VNet, subnets, private endpoints for managed services)?
+8. Is there a stated compliance requirement and is the architecture consistent with it?
 
 ### Common gaps
 
-- Single KMS key used across all services — per-component CMK not specified
-- PII scan step present in diagram but not confirmed to occur before LLM call
 - Audit logging covers application logs but not cloud API call logs (CloudTrail / Activity Log / Cloud Audit Logs)
 - Secrets manager referenced but rotation interval and mechanism not specified
+- Network boundary undefined — no VPC/VNet or private endpoint specification
 
 ### Cloud framework references
 
@@ -96,22 +93,18 @@ when_to_use: >
 ### Review questions
 
 1. Is there a retry strategy for every external call (max attempts, backoff algorithm, jitter)?
-2. **[POC]** Is jitter explicitly specified for all retry strategies (prevents thundering-herd on recovery)?
-3. **[POC]** Are batch buffer overflow limits documented (maximum batch size, overflow split strategy)?
-4. **[POC]** Are circuit breakers documented for all slow/expensive external calls (Snowflake, Databricks, Cloud LLM)?
-5. Is there a DLQ or equivalent for every async processing path?
-6. Is there a defined recovery procedure for DLQ messages (reprocessing trigger, alerting)?
-7. Are RPO and RTO targets stated in the spec or plan? Are they achievable with the chosen design?
-8. Is there a health check or readiness probe defined for every compute component?
-9. Is there a data backup and restore procedure for every stateful component?
-10. Are single points of failure identified and either accepted (with rationale) or eliminated?
+2. Is there a dead-letter queue or equivalent for every async processing path?
+3. Is there a defined recovery procedure for dead-letter messages (reprocessing trigger, alerting)?
+4. Are RPO and RTO targets stated in the spec or plan? Are they achievable with the chosen design?
+5. Is there a health check or readiness probe defined for every compute component?
+6. Is there a data backup and restore procedure for every stateful component?
+7. Are single points of failure identified and either accepted (with rationale) or eliminated?
 
 ### Common gaps
 
 - Retry strategy documented but no jitter — thundering-herd risk on recovery
-- Batch buffer overflow behavior not specified — data loss risk on buffer saturation
-- Circuit breakers not present on Snowflake/Databricks/LLM calls — slow downstream blocks pipeline
 - DLQ present but no alert on depth and no reprocessing procedure
+- RPO/RTO not stated — HA pattern chosen without a requirement
 
 ### Cloud framework references
 
@@ -159,21 +152,19 @@ when_to_use: >
 
 ### Review questions
 
-1. **[POC]** Is a Cost Model column present in the component selection matrix (mandatory — not optional)?
-2. **[POC]** Is a token cost range present for every LLM integration (input/output tokens, monthly range, assumptions stated)?
-3. **[POC]** Is storage tiering documented for Iceberg Parquet files and the reconciliation ledger (with lifecycle policy)?
-4. Are resource tagging and cost allocation controls documented?
-5. Is there a budget alerting mechanism specified?
-6. Are spot/preemptible instances considered for batch or fault-tolerant workloads?
-7. Are data transfer costs identified for cross-region or cross-cloud flows?
-8. Are any services provisioned at fixed capacity that could be replaced with consumption-based alternatives?
+1. Is a Cost Model column present in the component selection matrix (mandatory — not optional)?
+2. Are resource tagging and cost allocation controls documented?
+3. Is there a budget alerting mechanism specified?
+4. Are spot/preemptible instances considered for batch or fault-tolerant workloads?
+5. Are data transfer costs identified for cross-region or cross-cloud flows?
+6. Are any services provisioned at fixed capacity that could be replaced with consumption-based alternatives?
+7. Is storage tiering documented for any compliance-retained or large-volume data?
 
 ### Common gaps
 
 - No Cost Model column in component selection matrix
-- LLM token cost not estimated — largest variable cost in document processing platforms
-- Iceberg / Parquet storage tier not specified — defaults to hot, which is expensive for retained data
-- Cross-cloud data transfer (Snowflake ↔ Databricks via object store) not flagged as egress-dominant
+- No budget alerting mechanism specified
+- Cross-region data transfer not flagged as a cost driver
 
 ### Cloud framework references
 
@@ -202,7 +193,11 @@ After completing the review, produce a summary table:
 Status definitions:
 - ✅ **Pass** — all questions have documented evidence or accepted risk acknowledgements
 - ⚠️ **Gap** — 1–2 questions unanswered; deliverable can proceed with open decisions added
-- ❌ **Fail** — 3+ questions unanswered, or any **[POC]** question or P0 question (IAM, encryption, retry) is unanswered
+- ❌ **Fail** — 3+ questions unanswered, or any P0 question unanswered (IAM, encryption, retry)
 
 A ❌ Fail on Security or Reliability blocks deliverable sign-off.
 A ⚠️ Gap on any pillar requires an open decision entry before handoff to engineering.
+
+> **Document-processing profile:** if the spec declares `profile: document-processing`,
+> load the `document-processing-profile` skill and append its additional review checks to
+> this table before finalising the review.

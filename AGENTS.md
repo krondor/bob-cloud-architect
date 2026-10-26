@@ -8,16 +8,26 @@ Keep it short, accurate, and reviewed like code. Update it when conventions chan
 
 ## Purpose of this mode
 
-This workspace uses the `cloud-architect` Bob mode to design production-ready, multi-cloud, event-driven architectures. In that mode the agent works from a written spec whose requirements a human has approved, and produces architecture deliverables. The no-implementation restriction applies to the `cloud-architect` mode only; other modes follow their own instructions.
+This workspace provides two Bob modes:
+
+- **`cloud-architect`** — designs production-ready cloud architectures for enterprise environments (any engagement type). Works from an approved spec; produces diagrams, component selections, security designs, integration patterns, data models, and implementation plans. No implementation code.
+- **`architecture-reviewer`** — read-only well-architected review of a completed deliverable. Produces a five-pillar gap analysis and open decision entries. Does not write files or produce architecture.
+
+The no-implementation restriction applies to the `cloud-architect` mode only; other modes follow their own instructions.
 
 **Workspace layout:**
 
 ```
-specs/          Spec-driven work: spec.md, plan.md, tasks.md per feature or system
-docs/           Architecture outputs produced by the agent (diagrams, decisions, models).
-                Shared across specs: every file MUST be prefixed with the spec number, e.g. docs/001-component-matrix.md
-.bob/           Bob config: custom mode, rules, MCP example
+specs/          Spec-driven work: spec.md, plan.md, tasks.md, checkpoint.md per feature or system
+docs/<spec-id>/ Architecture outputs produced by the agent (diagrams, decisions, models, evidence register).
+                One folder per spec, named after the spec folder, e.g. docs/001-doc-processing-platform/component-matrix.md
+.bob/           Bob config: custom modes, rules, MCP example
 ```
+
+A `checkpoint.md` file in each spec folder records the session state so work can resume across
+sessions or mode switches without re-reading the entire history: spec revision, completed
+artifacts, blockers, validation status, and the next action. The agent creates it after the
+first deliverable and updates it after each subsequent task completes.
 
 ---
 
@@ -84,8 +94,9 @@ Load with `use_skill` when the task needs them. See `CONTRIBUTING.md` for how to
 
 | Skill | Location | When to use |
 |---|---|---|
-| `cloud-architecture-patterns` | `.bob/skills/cloud-architecture-patterns/SKILL.md` | Pattern selection, event-driven design, CQRS, saga, strangler fig, anti-patterns |
+| `cloud-architecture-patterns` | `.bob/skills/cloud-architecture-patterns/SKILL.md` | Pattern selection, anti-patterns, cloud service mappings, integration patterns, HA/DR and cost reference |
 | `well-architected-review` | `.bob/skills/well-architected-review/SKILL.md` | Reviewing a completed deliverable against the five-pillar WAF before handoff |
+| `document-processing-profile` | `.bob/skills/document-processing-profile/SKILL.md` | Spec declares `profile: document-processing` — adds pipeline patterns, DDL, LLM rules, and review checks |
 
 ---
 
@@ -94,7 +105,7 @@ Load with `use_skill` when the task needs them. See `CONTRIBUTING.md` for how to
 An architecture task is done when:
 
 - [ ] The spec acceptance criteria are mapped to evidence in the deliverable.
-- [ ] All three cloud variants are covered with equal depth (or the spec explicitly limits scope to fewer clouds).
+- [ ] All cloud targets named in the spec are covered with equal depth.
 - [ ] Every integration target has an explicit auth model and data contract documented.
 - [ ] Security design covers IAM, encryption, secrets, and audit logging.
 - [ ] A human has reviewed and approved the deliverable before it moves downstream.

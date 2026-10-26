@@ -4,6 +4,7 @@
 **Mode:** cloud-architect
 **Status:** draft <!-- draft | in-progress | ready-for-review | accepted -->
 **Requirements approval:** pending <!-- pending | approved by <name> on <YYYY-MM-DD> at <revision> -->
+**Profile:** <!-- optional: document-processing | leave blank for general architecture -->
 **Created:** <!-- YYYY-MM-DD -->
 **Author:** <!-- name -->
 
@@ -61,10 +62,9 @@ The architecture deliverable is complete when all of the following are satisfied
 - [ ] <!-- Add one checkbox per required deliverable section -->
 - [ ] <!-- e.g. High-level cloud-agnostic architecture diagram present -->
 - [ ] <!-- e.g. Cloud-specific diagrams for all target clouds present -->
-- [ ] <!-- e.g. Component selection matrix covers all required capabilities -->
+- [ ] <!-- e.g. Component selection matrix covers all required capabilities with Cost Model column -->
 - [ ] <!-- e.g. All integration targets documented with auth model and failure behavior -->
 - [ ] <!-- e.g. Security design covers IAM, encryption, secrets, audit logging -->
-- [ ] <!-- e.g. AI prompt specification present at `prompts/NNN-<prompt-name>.yaml` (spec-number prefix required) -->
 - [ ] <!-- e.g. Open decisions list populated with owner and target date -->
 
 ---

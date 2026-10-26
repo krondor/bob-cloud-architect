@@ -23,21 +23,21 @@ Every architecture produced in this mode must include a security design section 
 
 ## Secrets management
 
-- All credentials (Snowflake keypairs, Databricks service principal secrets, CCL API keys) are stored in the cloud-native secrets store (AWS Secrets Manager / Azure Key Vault / GCP Secret Manager).
-- Secret names follow a consistent naming convention: `<env>/<component>/<credential-type>` (e.g. `prod/snowflake-loader/private-key`).
+- All credentials are stored in the cloud-native secrets store (AWS Secrets Manager / Azure Key Vault / GCP Secret Manager).
+- Secret names follow a consistent naming convention: `<env>/<component>/<credential-type>` (e.g. `prod/api-gateway/client-secret`).
 - Secret rotation: document the expected rotation interval and the rotation mechanism (automatic where supported). On GCP, Secret Manager rotation schedules only publish a `SECRET_ROTATE` message to a Pub/Sub topic; a subscriber (function or job) must perform the actual rotation, so include that component in the design.
 - No secrets in source code, container images, Terraform state, or architecture documents.
 
 ## Audit logging
 
 - Every service emits structured logs to the central logging service (CloudWatch Logs / Azure Monitor Logs / Cloud Logging).
-- Log entries for document processing must include: document ID, processing stage, timestamp, outcome, and error code (never document content).
-- API calls to enterprise integrations (Snowflake, CCL, Databricks) are logged with request ID, endpoint, and latency.
+- Log entries must include: a correlation/request ID, the processing stage or operation, timestamp, outcome, and error code — never payload content that may contain sensitive data.
+- API calls to external integrations are logged with request ID, endpoint, status code, and latency.
 - Audit logs are immutable and retained per the enterprise retention policy (document in spec if known; default: 90 days). On GCP, retention is set per log bucket: `_Required` holds Admin Activity and System Event logs for a fixed 400 days, `_Default` keeps logs 30 days unless changed. Configure custom bucket retention (and bucket locking if required) to meet the policy.
 - CloudTrail / Activity Log / Cloud Audit Logs enabled for all cloud API calls. On GCP, Admin Activity logs are always on, but Data Access audit logs are disabled by default for all services except BigQuery; explicitly enable them for in-scope services.
 
 ## Data governance
 
-- PII must be identified in the data model section of every architecture. If documents may contain PII, the architecture must show where PII scanning occurs (pre-processing) and what the handling policy is.
+- If the spec identifies data that may contain PII or sensitive information, the architecture must show where scanning or masking occurs and document the handling policy.
 - Enterprise data classification labels (if provided in spec) apply to all output tables and storage buckets.
 - Data residency constraints (if provided in spec) must be reflected in region selection for all services.
