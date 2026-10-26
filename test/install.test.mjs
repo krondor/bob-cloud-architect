@@ -480,3 +480,31 @@ test("data-architecture-patterns skill exists, anchors resolve, and it is wired 
   assert.match(modes, /data-architecture-patterns/);
   assert.match(readFileSync(join(ROOT, "AGENTS.md"), "utf8"), /data-architecture-patterns/);
 });
+
+// ---- Planning-level skills: genai and IaC/delivery (plan 006) ----
+
+for (const name of ["genai-architecture", "iac-and-delivery-planning"]) {
+  test(`${name} skill: frontmatter, resolving anchors, grounding, size, no implementation code`, () => {
+    const p = join(ROOT, ".bob", "skills", name, "SKILL.md");
+    assert.ok(existsSync(p), `${name} must exist`);
+    const text = readFileSync(p, "utf8");
+    assert.match(text, new RegExp(`^name: ${name}$`, "m"));
+    assert.match(text, /^## Anti-patterns$/m);
+    assert.match(text, /^## Grounding sources$/m);
+    assert.match(text, /2026-10-26/, "must carry a verification date");
+    assert.ok(Buffer.byteLength(text) <= 19000, `${name} exceeds 19,000 bytes`);
+    const slug = (h) => h.toLowerCase().replace(/[^\w\s-]/g, "").trim().replace(/\s+/g, "-");
+    const anchors = new Set([...text.matchAll(/^#{2,3} (.+)$/gm)].map((m) => slug(m[1])));
+    for (const m of text.matchAll(/\]\(#([^)]+)\)/g)) {
+      assert.ok(anchors.has(m[1]), `navigation anchor #${m[1]} has no matching heading`);
+    }
+    // Design-only: fenced blocks may be decision trees, never HCL/YAML/Bicep/code.
+    for (const m of text.matchAll(/```(\w*)/g)) {
+      assert.ok(!["hcl", "terraform", "yaml", "yml", "bicep", "json", "python", "bash", "sh"].includes(m[1]), `code fence ${m[1]} not allowed`);
+    }
+    assert.doesNotMatch(text, /^\s*(resource|provider|module)\s+"/m, "no HCL");
+    const modes = readFileSync(join(ROOT, ".bob", "custom_modes.yaml"), "utf8");
+    assert.ok(modes.includes(name), `${name} must be listed in the mode skill-loading steps`);
+    assert.ok(readFileSync(join(ROOT, "AGENTS.md"), "utf8").includes(name), `${name} must be in AGENTS.md`);
+  });
+}

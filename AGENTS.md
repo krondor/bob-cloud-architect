@@ -96,6 +96,8 @@ Load with `use_skill` when the task needs them. See `CONTRIBUTING.md` for how to
 |---|---|---|
 | `cloud-architecture-patterns` | `.bob/skills/cloud-architecture-patterns/SKILL.md` | Pattern selection, anti-patterns, cloud service mappings, integration patterns, HA/DR and cost reference |
 | `data-architecture-patterns` | `.bob/skills/data-architecture-patterns/SKILL.md` | Spec involves analytical data, lakehouse, streaming analytics, data mesh, catalog or data governance |
+| `genai-architecture` | `.bob/skills/genai-architecture/SKILL.md` | Spec involves LLMs, RAG, agents, model access, AI safety or evaluation (not batch document summarisation alone; see the profile) |
+| `iac-and-delivery-planning` | `.bob/skills/iac-and-delivery-planning/SKILL.md` | Planning IaC tool choice, state/module/environment strategy, policy-as-code, landing-zone structure, CI/CD and supply-chain controls (design level, no code) |
 | `well-architected-review` | `.bob/skills/well-architected-review/SKILL.md` | Reviewing a completed deliverable against the five-pillar WAF before handoff |
 | `document-processing-profile` | `.bob/skills/document-processing-profile/SKILL.md` | Spec declares `profile: document-processing` — adds pipeline patterns, DDL, LLM rules, and review checks |
 

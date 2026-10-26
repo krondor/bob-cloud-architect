@@ -22,7 +22,7 @@ produce, and how you handle requests that fall outside the architecture role.
 - Application code in any language (Python, Java, Go, TypeScript, etc.)
 - Infrastructure-as-code (Terraform, OpenTofu, Pulumi, CDK, Bicep, GCP Infrastructure Manager). Do not recommend GCP Deployment Manager: support ended 2026-04-01 and the service shuts down 2027-06-30.
 - Test plans, test suites, or test code
-- CI/CD pipeline definitions
+- CI/CD pipeline definitions (stage and gate design is in scope; see iac-and-delivery-planning)
 - Runbooks or operational procedures beyond a recovery runbook pointer
 - Cost invoices or single-point dollar figures — only assumption-labelled ranges (see `07-cost-optimization.md`)
 

@@ -1,6 +1,6 @@
 ---
 name: data-architecture-patterns
-version: 1.0.0
+version: 1.0.1
 description: >
   Generic data-platform architecture guidance for AWS, Azure, and GCP: store selection
   (OLTP, warehouse, lakehouse, streaming), medallion layering, open table formats and catalogs,
@@ -115,9 +115,17 @@ Selection facts:
 - GCP: Pub/Sub is serverless with dead-letter topics and 31-day retention, and is not
   Kafka-compatible. Managed Service for Apache Kafka fits portability, strict ordering at high
   throughput, and long retention.
-- AWS: Kinesis Data Streams (capacity: provisioned or on-demand), Amazon Data Firehose for
-  managed delivery to stores, Managed Service for Apache Flink for stream processing, Amazon
-  MSK when open-source Kafka compatibility is required.
+- AWS Kinesis Data Streams: provisioned or on-demand (On-demand Advantage is account-level,
+  25 MiB/s commitment); retention 24 h default, 365 days max; ordering only per shard (partition
+  key); producer/consumer retries duplicate records, so make consumers idempotent; shared or
+  enhanced fan-out consumers.
+- AWS Amazon Data Firehose: sources Direct PUT, Kinesis, MSK (S3 only); destinations include
+  S3, Redshift, OpenSearch, Iceberg tables, Snowflake; buffer 0-900 s (0 = seconds).
+- AWS Managed Service for Apache Flink (successor to Kinesis Data Analytics; the SQL
+  product was discontinued) reads Kinesis and MSK. Pick MSK for Kafka compatibility:
+  Provisioned (Standard or Express brokers) or Serverless; MSK Connect for connectors.
+- AWS to Iceberg: Firehose, Kinesis/MSK Express data delivery to S3 Tables, Glue streaming.
+  Glue zero-ETL does not cover streams.
 - Azure: Fabric Eventstream offers a Kafka endpoint, at-least-once delivery, and up to
   90 days retention; Event Hubs has a Kafka-compatible endpoint; Event Grid is for discrete
   event routing, not high-volume streams.
@@ -185,9 +193,9 @@ borders; record each path.
 | Lakehouse compute | EMR / Glue / Athena / Databricks | Fabric Lakehouse (Spark) / Databricks | Managed Service for Apache Spark / BigQuery / Databricks |
 | Catalog | Glue Data Catalog (Iceberg REST) | OneLake catalog / Purview | Lakehouse runtime catalog |
 | Governance | Lake Formation | Purview Unified Catalog | Knowledge Catalog |
-| Streaming (platform) | Kinesis Data Streams / MSK | Event Hubs / Fabric Eventstream | Pub/Sub / Managed Kafka |
-| Streaming (processing) | Managed Service for Apache Flink | Stream Analytics / Fabric Eventstream | Dataflow |
-| Managed delivery to stores | Amazon Data Firehose | Event Hubs Capture (Avro; Parquet only via Stream Analytics) | Pub/Sub export subscriptions (BigQuery, Cloud Storage, Bigtable preview) |
+| Streaming (platform) | Kinesis Data Streams / MSK (Provisioned, Serverless) | Event Hubs / Fabric Eventstream | Pub/Sub / Managed Kafka |
+| Streaming (processing) | Managed Service for Apache Flink / Glue streaming | Stream Analytics / Fabric Eventstream | Dataflow |
+| Managed delivery to stores | Amazon Data Firehose (incl. Iceberg) | Event Hubs Capture (Avro; Parquet only via Stream Analytics) | Pub/Sub export subscriptions (BigQuery, Cloud Storage, Bigtable preview) |
 | CDC / replication | DMS, zero-ETL integrations | Fabric Mirroring (Delta in OneLake), Eventstream CDC connectors | Datastream |
 | Cross-engine table format | Iceberg (Glue REST) | Delta native; Iceberg virtualized or native | Iceberg (Lakehouse REST catalog) |
 
@@ -200,7 +208,9 @@ Verified 2026 via vendor documentation MCP servers; re-verify when more than a f
 | Claim area | Source |
 |---|---|
 | Glue Iceberg REST, Lake Formation credential vending, SageMaker lakehouse | docs.aws.amazon.com (SageMaker lakehouse architecture, Lake Formation) |
-| AWS streaming services | docs.aws.amazon.com/whitepapers/latest/build-modern-data-streaming-analytics-architectures (historical-reference whitepaper; confirm current service pages) |
+| AWS Kinesis Data Streams | docs.aws.amazon.com/streams/latest/dev (how-do-i-size-a-stream, key-concepts, kinesis-record-processor-duplicates) |
+| AWS Firehose, Flink, MSK, Glue streaming | docs.aws.amazon.com/firehose/latest/dev (create-name, create-configure-backup); managed-flink/latest/java/what-is.html; kinesisanalytics/latest/dev/limits.html; msk/latest/developerguide (broker-instance-types, serverless, msk-connect); glue/latest/dg/streaming-chapter.html |
+| AWS Kinesis vs MSK choice | docs.aws.amazon.com/decision-guides/latest/decision-guides/application-integration-on-aws-how-to-choose.html (general; no streaming-only AWS comparison page found). 2022 streaming whitepaper: historical, not relied on |
 | AWS data mesh with Lake Formation | docs.aws.amazon.com/prescriptive-guidance/latest/strategy-data-mesh |
 | OneLake Iceberg REST API and limitations | learn.microsoft.com/fabric/onelake/table-apis/iceberg-table-apis-overview |
 | Fabric Lakehouse vs Warehouse, Eventstream, Mirroring, Event Hubs Capture | learn.microsoft.com/fabric, learn.microsoft.com/azure/event-hubs |

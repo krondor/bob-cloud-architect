@@ -31,9 +31,25 @@
     "data-architecture-patterns": {
       "source": "local",
       "type": "custom",
-      "version": "1.0.0",
+      "version": "1.0.1",
       "path": ".bob/skills/data-architecture-patterns/SKILL.md",
       "description": "Generic data-platform guidance: store selection, medallion layering, open table formats and catalogs, streaming ingestion selection, data mesh, governance, and residency across AWS, Azure, and GCP.",
+      "authored": "2026-10-26"
+    },
+    "genai-architecture": {
+      "source": "local",
+      "type": "custom",
+      "version": "1.0.0",
+      "path": ".bob/skills/genai-architecture/SKILL.md",
+      "description": "Planning-level generative-AI architecture: pattern selection, model access, RAG, agents, safety, evaluation, cost and reliability across AWS, Azure, and GCP.",
+      "authored": "2026-10-26"
+    },
+    "iac-and-delivery-planning": {
+      "source": "local",
+      "type": "custom",
+      "version": "1.0.0",
+      "path": ".bob/skills/iac-and-delivery-planning/SKILL.md",
+      "description": "Planning-level IaC and CI/CD guidance: tool selection (Terraform, OpenTofu, native), state and environment strategy, policy-as-code, landing zones, OIDC pipelines and supply-chain controls. No implementation code.",
       "authored": "2026-10-26"
     },
     "well-architected-review": {
