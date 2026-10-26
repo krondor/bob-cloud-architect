@@ -95,6 +95,7 @@ Load with `use_skill` when the task needs them. See `CONTRIBUTING.md` for how to
 | Skill | Location | When to use |
 |---|---|---|
 | `cloud-architecture-patterns` | `.bob/skills/cloud-architecture-patterns/SKILL.md` | Pattern selection, anti-patterns, cloud service mappings, integration patterns, HA/DR and cost reference |
+| `data-architecture-patterns` | `.bob/skills/data-architecture-patterns/SKILL.md` | Spec involves analytical data, lakehouse, streaming analytics, data mesh, catalog or data governance |
 | `well-architected-review` | `.bob/skills/well-architected-review/SKILL.md` | Reviewing a completed deliverable against the five-pillar WAF before handoff |
 | `document-processing-profile` | `.bob/skills/document-processing-profile/SKILL.md` | Spec declares `profile: document-processing` — adds pipeline patterns, DDL, LLM rules, and review checks |
 

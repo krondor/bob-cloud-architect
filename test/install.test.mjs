@@ -448,3 +448,35 @@ test("review skill marks P0 questions and defines a read-only findings handoff",
   const architect = modesFromSource().find((m) => m.slug === SLUG);
   assert.match(architect.customInstructions, /review-findings/);
 });
+
+// ---- Skill grounding and data-architecture skill (plan 006) ----
+
+test("well-architected-review uses current Google framework URLs and lists optional Sustainability", () => {
+  const text = readFileSync(join(ROOT, ".bob", "skills", "well-architected-review", "SKILL.md"), "utf8");
+  assert.doesNotMatch(text, /https:\/\/cloud\.google\.com\/architecture\/framework/, "legacy Google framework URL");
+  assert.match(text, /docs\.cloud\.google\.com\/architecture\/framework\/performance-optimization/);
+  assert.match(text, /## Pillar 6 — Sustainability \(optional\)/);
+});
+
+test("patterns skill uses current service names", () => {
+  const text = patternsSkill();
+  assert.doesNotMatch(text, /Cognitive Search|Cloud Functions/);
+});
+
+test("data-architecture-patterns skill exists, anchors resolve, and it is wired into the mode and decision tree", () => {
+  const p = join(ROOT, ".bob", "skills", "data-architecture-patterns", "SKILL.md");
+  assert.ok(existsSync(p), "data-architecture-patterns skill must exist");
+  const text = readFileSync(p, "utf8");
+  assert.match(text, /^name: data-architecture-patterns$/m);
+  assert.match(text, /^## Anti-patterns$/m);
+  assert.match(text, /^## Grounding sources$/m);
+  const slug = (h) => h.toLowerCase().replace(/[^\w\s-]/g, "").trim().replace(/\s+/g, "-");
+  const anchors = new Set([...text.matchAll(/^#{2,3} (.+)$/gm)].map((m) => slug(m[1])));
+  for (const m of text.matchAll(/\]\(#([^)]+)\)/g)) {
+    assert.ok(anchors.has(m[1]), `navigation anchor #${m[1]} has no matching heading`);
+  }
+  assert.match(patternsSkill(), /load data-architecture-patterns/);
+  const modes = readFileSync(join(ROOT, ".bob", "custom_modes.yaml"), "utf8");
+  assert.match(modes, /data-architecture-patterns/);
+  assert.match(readFileSync(join(ROOT, "AGENTS.md"), "utf8"), /data-architecture-patterns/);
+});

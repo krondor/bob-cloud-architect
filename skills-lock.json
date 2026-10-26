@@ -23,10 +23,18 @@
     "cloud-architecture-patterns": {
       "source": "local",
       "type": "custom",
-      "version": "1.3.1",
+      "version": "1.3.2",
       "path": ".bob/skills/cloud-architecture-patterns/SKILL.md",
       "description": "Pattern catalog for enterprise cloud architecture — event-driven, CQRS, saga, structural, and data patterns with cloud-native service mappings for AWS, Azure, and GCP.",
       "authored": "2025-01-27"
+    },
+    "data-architecture-patterns": {
+      "source": "local",
+      "type": "custom",
+      "version": "1.0.0",
+      "path": ".bob/skills/data-architecture-patterns/SKILL.md",
+      "description": "Generic data-platform guidance: store selection, medallion layering, open table formats and catalogs, streaming ingestion selection, data mesh, governance, and residency across AWS, Azure, and GCP.",
+      "authored": "2026-10-26"
     },
     "well-architected-review": {
       "source": "local",

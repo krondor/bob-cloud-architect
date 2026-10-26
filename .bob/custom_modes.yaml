@@ -76,6 +76,8 @@ customModes:
       3. Load skills using use_skill only when the task needs them:
           - Pattern selection, event-driven design, component selection matrix, integration
             patterns, HA/DR or cost detail → cloud-architecture-patterns
+          - Analytical data, lakehouse, streaming analytics, data mesh, catalog/governance
+            → data-architecture-patterns
           - Reviewing a completed deliverable        → well-architected-review
           - Spec declares profile: document-processing → document-processing-profile
             (load at session start for that spec; apply its hard constraints and patterns)

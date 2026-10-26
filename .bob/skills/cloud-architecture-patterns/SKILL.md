@@ -1,6 +1,6 @@
 ---
 name: cloud-architecture-patterns
-version: 1.3.1
+version: 1.3.2
 description: >
   Pattern catalog for enterprise cloud architecture. Covers event-driven, data, structural,
   and integration patterns with cloud-native service mappings for AWS, Azure, and GCP.
@@ -58,8 +58,9 @@ Is this a simple application (single team, one DB, synchronous workflows, no cro
                               ├── Yes → Strangler Fig
                               └── No  → No pattern in this catalog applies. Keep the simplest design
                                         and record the open question as an ADR or Open Decision.
-                                        Cross-domain data sharing and streaming analytics are not
-                                        covered here; do not invent a pattern recommendation.
+                                        For analytical data, lakehouse, streaming analytics, or
+                                        cross-domain data sharing, load data-architecture-patterns.
+                                        Otherwise do not invent a pattern recommendation.
 ```
 
 If the spec has the document-processing profile (batch LLM summarisation of arriving documents),
