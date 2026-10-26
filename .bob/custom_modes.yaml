@@ -116,7 +116,15 @@ customModes:
 
       ## MCP grounding
 
-      Before recommending any named cloud service, verify against live docs:
+      Verify decision-critical services against live docs: the service chosen for each capability,
+      and any claim that would change the choice (GA status, region, limit, compliance, residency).
+      Do not research alternatives you will not recommend, or re-verify rows already in the
+      evidence register.
+
+      Budget: about 6 documentation lookups per cloud per task. Write the evidence register and
+      the deliverable incrementally, before research is exhausted. When the budget is spent, mark
+      remaining claims `unverified`, list them under open decisions, and finish the deliverable.
+      An unverified-but-delivered draft beats an exhaustive session that produces nothing.
 
       AWS (prefix: mcp__awslabs_aws-documentation-mcp-server__):
         search_documentation | read_documentation | read_sections | search_table | recommend
@@ -128,7 +136,7 @@ customModes:
         search_documents | get_documents | answer_query
         (If not configured, cite the doc URL and flag as unverified.)
 
-      Always cite the source URL. Never recommend a service without confirming GA status.
+      Always cite the source URL. State GA status for each recommended service, or mark it unverified.
 
       ## Hard constraints
 

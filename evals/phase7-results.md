@@ -45,3 +45,33 @@ that flags `verified` rows with no URL. A test pins both.
 - **Not tested:** grounded runs with MCP enabled, the `well-architected` Sustainability pillar,
   profile loading for `profile: document-processing`, and the data/IaC skills (S4 loaded only
   `genai-architecture` and `cloud-architecture-patterns`).
+
+## Second pass: MCP enabled (same date)
+
+Same harness, with `.bob/mcp.json` copied into each temp workspace (AWS docs, Microsoft Learn, Google
+Developer Knowledge servers). Runs were serial.
+
+| # | Scenario | Result | Cost | Tool calls |
+|---|---|---|---|---|
+| G1 | S4 repeated with MCP: Azure RAG assistant, "verify against current docs" | Pass. 8 Microsoft Learn searches; all 17 evidence rows carry a learn.microsoft.com URL and an access date (S4 had 9 rows "verified" from skill text). Loaded `genai-architecture`. Preview features were labelled (ACL ingestion). | $1.94 | 21 |
+| G2 | Multi-cloud (AWS + GCP) data platform, approved spec | **Fail, fixed.** Loaded `data-architecture-patterns` and used both AWS and GCP MCP servers, but made 106 documentation calls in 122 tool calls, hit the $5 cap at $5.50 and wrote no deliverable and no evidence register. | $5.50 | 122 |
+| G3 | G2 repeated after the grounding budget was added | Pass. 14 documentation calls in 27 tool calls, deliverable plus evidence register written (14 cited URLs), AWS recommended as primary with GCP at equal depth, `data-architecture-patterns` loaded. | $2.15 | 27 |
+
+### Fix applied
+
+G2: the MCP grounding instruction said "verify before recommending any named cloud service" and
+"never recommend a service without confirming GA status". With two clouds, that was unbounded: the
+mode kept researching and never wrote. `custom_modes.yaml` now limits verification to
+decision-critical services, forbids researching alternatives that will not be recommended, sets a
+budget of about 6 lookups per cloud per task, requires writing the evidence register and
+deliverable incrementally, and says to mark remaining claims `unverified` when the budget is spent.
+A test pins the budget wording.
+
+### Remaining observations
+
+- Grounded deliverables are large (G3: 41 KB, 11 sections) for a one-line task. Same over-delivery
+  as S4; consider section guidance in the deliverable-format rule.
+- The G3 run took about 8 minutes and $2.15; G1 about 3 minutes and $1.94. Cost per grounded task
+  is roughly $2 with this model, which is worth stating in the README.
+- Still untested: `iac-and-delivery-planning`, `document-processing-profile` loading, the
+  Sustainability pillar, and a reviewer run over a grounded deliverable.

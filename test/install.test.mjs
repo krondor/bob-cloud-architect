@@ -518,3 +518,10 @@ test("evidence rule defines what counts as a source, and the review skill checks
   const review = readFileSync(join(ROOT, ".bob", "skills", "well-architected-review", "SKILL.md"), "utf8");
   assert.match(review, /every `verified` row needs a vendor documentation\s+URL/);
 });
+
+test("MCP grounding rule is bounded so research cannot starve the deliverable", () => {
+  const modes = readFileSync(join(ROOT, ".bob", "custom_modes.yaml"), "utf8");
+  assert.match(modes, /Budget: about \d+ documentation lookups per cloud per task/);
+  assert.match(modes, /incrementally/);
+  assert.doesNotMatch(modes, /Never recommend a service without confirming GA status/);
+});
