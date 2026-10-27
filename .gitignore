@@ -24,3 +24,4 @@ specs/000*
 .env
 .env.*
 *.swp
+/DESIGN.md

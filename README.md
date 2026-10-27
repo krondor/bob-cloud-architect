@@ -1,10 +1,24 @@
 # bob-cloud-architect
 
-A shareable IBM Bob workspace mode for designing production-ready, multi-cloud, event-driven architectures across AWS, Azure, and GCP.
+A shareable IBM Bob workspace for designing production-ready enterprise architectures on AWS, Azure, and GCP, singly or in combination.
 
 ## What this is
 
-The `cloud-architect` mode gives Bob the role of a senior enterprise cloud architect. It produces complete architecture deliverables — diagrams, component selection, security design, integration patterns, data models, and implementation plans — without writing implementation code.
+Two modes:
+
+- **`cloud-architect`** gives Bob the role of a senior enterprise cloud architect. It works from a human-approved spec and produces architecture deliverables — diagrams, component selection, security design, integration patterns, data models, and implementation plans — without writing implementation code. The target clouds come from the spec, not from the mode.
+- **`architecture-reviewer`** is a read-only five-pillar well-architected review of a completed deliverable. It writes no files and emits a findings block the architect can import.
+
+Domain knowledge lives in on-demand skills, so a session loads only what its task needs:
+
+| Skill | Covers |
+|---|---|
+| `cloud-architecture-patterns` | Pattern selection, anti-patterns, service mappings, integration, HA/DR, cost |
+| `data-architecture-patterns` | Lakehouse, streaming analytics, data mesh, catalog and governance |
+| `genai-architecture` | LLMs, RAG, agents, model access, AI safety and evaluation |
+| `iac-and-delivery-planning` | IaC tool choice, state and environment strategy, policy-as-code, CI/CD gates (planning level only) |
+| `well-architected-review` | Five-pillar review, with an optional Sustainability pillar |
+| `document-processing-profile` | Opt-in profile for document pipelines; applies when the spec says `Profile: document-processing` |
 
 ## What it is not
 
@@ -23,12 +37,13 @@ Or from a local checkout: run `npm install` once in the checkout (the installer 
 
 By default, the installer copies the mode definition, rules, skills, MCP configuration template (`.bob/mcp.json.example`), `AGENTS.md`, the blank spec template (`specs/TEMPLATE`), and the mode documentation (`README-cloud-architect.md` — renamed so it does not conflict with the project's own `README.md`). It also writes `.bob/cloud-architect.lock.json`, which records a SHA-256 of each installed file. Tests, `package.json`, and repo tooling are never installed into your workspace.
 
-Re-running the installer updates files you have not edited and keeps files you have. Use `--force` to overwrite your edits.
+Re-running the installer updates files you have not edited and keeps files you have. Use `--force` to overwrite your edits. A spec that needs the document-processing rules must declare `Profile: document-processing`; without it the profile skill is not applied.
 
 | Option | Effect |
 |---|---|
 | `--dry-run` | Print what would change; write nothing |
-| `--force` | Overwrite locally modified files and replace the existing `cloud-architect` mode entry |
+| `--force` | Overwrite locally modified files and replace the existing mode entries |
+| `--modes a,b` | Install only the named modes (`cloud-architect`, `architecture-reviewer`). All modes by default |
 | `--with-examples` | Also install example specs (e.g. `specs/001-doc-processing-platform`). Off by default |
 | `--git-exclude` | Add installed paths to `.git/info/exclude` (local-only ignore) |
 | `--no-agents` | Skip copying `AGENTS.md` |
@@ -44,13 +59,14 @@ Re-running the installer updates files you have not edited and keeps files you h
 1. Open the workspace folder in Bob and select **Cloud Architect** in the mode picker.
 2. Fill in `AGENTS.md` — replace all `<!-- TODO -->` sections with your engagement's context before starting any session.
 3. Optionally configure MCP servers in `.bob/mcp.json` (see `.bob/mcp.json.example` for the template).
+4. For a review, switch to **Architecture Reviewer** and point it at the spec and `docs/<spec-id>/`.
 
 ## Suggested first prompts
 
 - "Review AGENTS.md and specs/ and tell me what spec is active and what the next task is."
 - "The spec is in specs/001-doc-processing-platform/spec.md — start with plan.md."
 - "Produce the high-level architecture diagram for the current spec."
-- "Produce the component selection matrix for AWS, Azure, and GCP per the spec."
+- "Produce the component selection matrix for the clouds named in the spec."
 
 ## What the mode produces
 
@@ -103,7 +119,9 @@ flowchart TD
 
 ## Review before use
 
-- **Not yet run against a real engagement.** Mode YAML syntax has been validated; first pilot run is the real test.
+- **Not yet run against a real engagement.** It has been exercised in headless test runs only (see `evals/phase7-results.md` in the source repository); a real pilot is the real test.
+- **Grounded runs are slow and costly.** With MCP servers on, each task spends a bounded budget of about 6 documentation lookups per cloud, and deliverables for a one-line task have been 36–50 KB. Anything beyond the budget is marked `unverified` and listed as an open decision.
+- **Permissions are not hardened.** `cloud-architect` has unrestricted `edit`; an `edit` path restriction was not enforced in headless testing and has not been retested interactively. Only the reviewer's read-only status is a real boundary. Do not rely on the mode to confine writes.
 - **AGENTS.md has placeholder sections.** Fill them in before running any real architecture session.
 - **MCP servers are optional.** Cloud documentation MCPs (AWS, Azure, GCP) improve component selection accuracy but are not required. See `.bob/mcp.json.example` for configuration.
 
@@ -130,7 +148,7 @@ flowchart TD
     style F fill:#fef9e8,stroke:#e5a200
 ```
 
-**Key insight:** System prompt, tool definitions, rules, and mode instructions are all fixed overhead — they consume tokens before you send a single message. Bob loads **every** file in `.bob/rules-cloud-architect/` and combines it with the mode's `customInstructions`; a comment in a rules file does not defer loading. Skills are the only layer that is demand-loaded mid-session, which is why deep reference content belongs in skills rather than rules.
+**Key insight:** System prompt, tool definitions, rules, and mode instructions are all fixed overhead — they consume tokens before you send a single message. Bob loads **every** file in `.bob/rules-cloud-architect/` and combines it with the mode's `customInstructions`; a comment in a rules file does not defer loading. Skills are the only layer that is demand-loaded mid-session, which is why deep reference content belongs in skills rather than rules. For `cloud-architect` the always-loaded rules are about 22,500 characters (a test enforces this ceiling); each skill is 12–26k characters and is loaded only when used. Skills are global in Bob: any mode with the `skill` group can see all of them.
 
 ### Rule loading order
 
@@ -175,7 +193,7 @@ Rules are always loaded; skills load on demand:
 #### Hooks
 Hooks run shell commands or HTTP requests at Bob lifecycle events (`PreToolUse`, `PostToolUse`, `SessionStart`, `Stop`, etc.). They operate **outside the agent's context window** — they cannot read or write the conversation, but they can block tool calls, run linters, or post audit events to external systems.
 
-**This mode has no hooks.** The mode's permission groups do not include `execute`, so the agent cannot run shell commands. That removes shell risk only: the mode still has unrestricted `edit`, plus `mcp`, `subagent`, and `mode`, so file edits and configured MCP tools can still change things. If you add `execute` to the groups (e.g. to allow `git` commands), add a `PreToolUse` hook to block any shell patterns that could cause harm.
+**This mode has no hooks.** The mode's permission groups do not include `execute`, so the agent cannot run shell commands. That removes shell risk only: `cloud-architect` still has unrestricted `edit`, plus `mcp`, `subagent`, and `mode`, so file edits and configured MCP tools can still change things. `architecture-reviewer` has no `edit` group. If you add `execute` to the groups (e.g. to allow `git` commands), add a `PreToolUse` hook to block any shell patterns that could cause harm.
 
 Add hooks in `.bob/settings.json`:
 ```json
