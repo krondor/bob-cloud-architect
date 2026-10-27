@@ -1,6 +1,6 @@
 ---
 name: well-architected-review
-version: 1.4.1
+version: 1.4.2
 description: >
   Structured five-pillar architecture review (plus an optional Sustainability pillar) mapped
   to the AWS, Azure, and Google Cloud Well-Architected Frameworks. Use to evaluate a spec or
@@ -28,7 +28,9 @@ when_to_use: >
    risk acknowledgement. A deliverable passes the review when all five core pillars pass (and Pillar 6 if the spec
    requires it — see below).
 5. Check `docs/<spec-id>/evidence-register.md`: every `verified` row needs a vendor documentation
-   URL and date. A `verified` row citing a skill, memory, or no URL is a gap (Operational Excellence).
+   URL and date, and statuses must be exactly `verified`, `from-skill`, `unverified`, or `stale`.
+   A `verified` row without a URL, an invented status, or a decision-critical claim that is not
+   `verified` and has no open decision is a gap (Operational Excellence).
 6. If the spec declares `profile: document-processing`, load the `document-processing-profile`
    skill and apply its additional review checks after completing this review.
 

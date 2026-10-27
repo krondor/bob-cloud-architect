@@ -90,3 +90,11 @@ A test pins the budget wording.
 - The evidence-source rule still leaks in the profile path: P1 recorded 11 rows as "verified (from skill)" with no URL, and I1 has one verified row without a URL. The rule text fixed in the first pass is followed in the grounded Azure run (G1) but not consistently when the work is skill-driven. Candidate fix: a stricter status vocabulary (`verified` only with a URL; `from-skill` as a separate status).
 - I1 reached the soft cost cap. Delivery/IaC specs trigger deep research across two clouds plus GitHub docs.
 - Bob Shell's `edit` `fileRegex` is documented for the IDE; the Shell docs show the same syntax, but enforcement under headless `bob run` was not observed. Retest in interactive Shell and the IDE before relying on it.
+
+### Evidence status fix (re-run of P1 as P2)
+
+The rule now defines exactly four statuses (`verified`, `from-skill`, `unverified`, `stale`) and forbids
+qualified variants; the review skill (1.4.2) flags invented statuses and unresolved non-`verified`
+decision-critical claims. P2 repeated the P1 scenario (profile example spec, T1 only): the evidence
+register has 7 `from-skill` rows and no "verified (from skill)" variants (P1 had 11). 13 tool calls,
+1.08 units. Single sample.

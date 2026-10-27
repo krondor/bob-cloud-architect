@@ -55,7 +55,7 @@
     "well-architected-review": {
       "source": "local",
       "type": "custom",
-      "version": "1.4.1",
+      "version": "1.4.2",
       "path": ".bob/skills/well-architected-review/SKILL.md",
       "description": "Structured five-pillar architecture review (plus optional Sustainability) mapped to the AWS, Azure, and Google Cloud Well-Architected Frameworks.",
       "authored": "2025-01-27"

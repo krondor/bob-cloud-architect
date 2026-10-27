@@ -514,9 +514,13 @@ for (const name of ["genai-architecture", "iac-and-delivery-planning"]) {
 test("evidence rule defines what counts as a source, and the review skill checks it", () => {
   const rule = readRule("06-deliverable-format.md");
   assert.match(rule, /vendor documentation URL opened in this session/);
-  assert.match(rule, /Skill text, memory/);
+  assert.match(rule, /never a qualified variant/);
   const review = readFileSync(join(ROOT, ".bob", "skills", "well-architected-review", "SKILL.md"), "utf8");
   assert.match(review, /every `verified` row needs a vendor documentation\s+URL/);
+  for (const status of ["verified", "from-skill", "unverified", "stale"]) {
+    assert.ok(rule.includes(`\`${status}\``), `rule must define the ${status} status`);
+  }
+  assert.match(review, /exactly `verified`, `from-skill`, `unverified`, or `stale`/);
 });
 
 test("MCP grounding rule is bounded so research cannot starve the deliverable", () => {

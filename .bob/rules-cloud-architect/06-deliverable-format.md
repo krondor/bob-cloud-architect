@@ -83,12 +83,11 @@ Prose for explanations. Code blocks for schemas, configs, and directory trees.
 
 ## Output location
 
-Each spec writes only inside its own folder, `docs/<spec-id>/`, where `<spec-id>` is the spec's
-folder name under `specs/` (e.g. `docs/001-doc-processing-platform/`). Never write a file directly
-into `docs/` or into another spec's folder.
+Each spec writes only inside `docs/<spec-id>/`, where `<spec-id>` is the spec's folder name under
+`specs/`. Never write directly into `docs/` or into another spec's folder.
 
-- Architecture documents: `docs/<spec-id>/<artifact-name>.md` (e.g. `docs/001-doc-processing-platform/architecture-overview.md`)
-- Component selection matrix: `docs/<spec-id>/component-matrix.md` (canonical hand-off artifact for downstream modes)
+- Architecture documents: `docs/<spec-id>/<artifact-name>.md`
+- Component selection matrix: `docs/<spec-id>/component-matrix.md` (canonical hand-off artifact)
 - Evidence register: `docs/<spec-id>/evidence-register.md` (see below)
 - If a task or acceptance criterion lists a path outside `docs/<spec-id>/`, write to `docs/<spec-id>/` anyway and flag the task for correction.
 
@@ -100,8 +99,13 @@ decision-critical facts once, then reuse the row instead of re-checking.
 
 | Claim | Applies to | Source and date | Status | Decisions that depend on it |
 |---|---|---|---|---|
-| <!-- e.g. Service X is GA in region Y --> | <!-- cloud/service --> | <!-- doc URL, YYYY-MM-DD --> | verified / unverified / stale | <!-- ADR or section --> |
+| <!-- e.g. Service X is GA in region Y --> | <!-- cloud/service --> | <!-- doc URL, YYYY-MM-DD --> | verified / from-skill / unverified / stale | <!-- ADR or section --> |
 
-`verified` requires a vendor documentation URL opened in this session (doc tool or fetch) and its
-date. Skill text, memory, and "standard documentation" are not sources: record those claims as
-`unverified` and say so in the summary, even when the user asked for verification.
+Status is exactly one of these; never a qualified variant like "verified (from skill)":
+- `verified`: a vendor documentation URL opened in this session (doc tool or fetch), with its date.
+- `from-skill`: taken from an installed skill or rule; cite it. Not a vendor source.
+- `unverified`: memory, "standard documentation", or no reachable source.
+- `stale`: a source that may have changed since it was read.
+
+Decision-critical claims that are not `verified` go under open decisions. State the count of
+non-`verified` rows in the summary, even when the user asked for verification.
