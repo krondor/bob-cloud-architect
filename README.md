@@ -23,8 +23,8 @@ Domain knowledge lives in on-demand skills, so a session loads only what its tas
 ## What it is not
 
 This mode does not generate application code, Terraform, or test suites. For those, see:
-- `bob-cloud-codegen` — Python source code generation
-- `bob-cloud-iac` — Terraform infrastructure as code
+- [`bob-cloud-codegen`](https://github.com/krondor/bob-cloud-codegen) — Python source code generation
+- [`bob-cloud-iac`](https://github.com/krondor/bob-cloud-iac) — Terraform infrastructure as code
 - `bob-cloud-testing` — test suite generation
 
 ## Install into your workspace
